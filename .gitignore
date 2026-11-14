@@ -1,0 +1,22 @@
+# Build and export directories
+build/
+ExportedGame/
+Exports/
+backups/
+
+# External third-party repositories (cloned in external/)
+external/BadLevel/
+external/glfw/
+external/glm/
+external/imgui/
+external/lua/
+external/miniaudio/
+external/nvrhi/
+
+# Temporary raw BMP captures (PNGs in docs/devlog/images are tracked)
+*.bmp
+*.obj.tmp
+*.ilk
+*.pdb
+.vs/
+out/

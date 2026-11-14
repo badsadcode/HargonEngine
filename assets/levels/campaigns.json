@@ -1,0 +1,472 @@
+{
+  "campaigns": [
+    {
+      "code": "c1m1",
+      "title": "The Slipgate Sanctum",
+      "campaign": 1,
+      "level_index": 1,
+      "seed": 101,
+      "style": "gothic",
+      "recipe": "classic",
+      "stats": {
+        "seed": 101,
+        "grid": [
+          140,
+          149
+        ],
+        "rooms": 10,
+        "corridors": 8,
+        "entities": 130,
+        "open_cells": 4207,
+        "multi_span_cells": 27,
+        "diagonal_cells": 95,
+        "shapes": [
+          "chamfer",
+          "octagon",
+          "rect",
+          "round"
+        ],
+        "storeys": 1,
+        "connectors": {
+          "stairwell": 0,
+          "lift": 0,
+          "ladder": 0,
+          "spiral": 0
+        },
+        "links": 0,
+        "drops": 0,
+        "windows": 4,
+        "galleries": 0,
+        "halls": 1,
+        "open_areas": 0,
+        "hall_rooms": 3,
+        "z_range": [
+          -32,
+          592
+        ]
+      }
+    },
+    {
+      "code": "c1m2",
+      "title": "Vault of the Iron Keys",
+      "campaign": 1,
+      "level_index": 2,
+      "seed": 204,
+      "style": "castle",
+      "recipe": "classic",
+      "stats": {
+        "seed": 204,
+        "grid": [
+          251,
+          148
+        ],
+        "rooms": 15,
+        "corridors": 13,
+        "entities": 202,
+        "open_cells": 6116,
+        "multi_span_cells": 210,
+        "diagonal_cells": 100,
+        "shapes": [
+          "L",
+          "U",
+          "Z",
+          "chamfer",
+          "octagon",
+          "rect",
+          "ring"
+        ],
+        "storeys": 2,
+        "connectors": {
+          "stairwell": 1,
+          "lift": 1,
+          "ladder": 1,
+          "spiral": 0
+        },
+        "links": 2,
+        "drops": 0,
+        "windows": 4,
+        "galleries": 0,
+        "halls": 1,
+        "open_areas": 0,
+        "hall_rooms": 2,
+        "z_range": [
+          -48,
+          880
+        ]
+      }
+    },
+    {
+      "code": "c1m3",
+      "title": "Catacombs of Sorrow",
+      "campaign": 1,
+      "level_index": 3,
+      "seed": 307,
+      "style": "gothic",
+      "recipe": "fortress",
+      "stats": {
+        "seed": 307,
+        "grid": [
+          284,
+          220
+        ],
+        "rooms": 18,
+        "corridors": 19,
+        "entities": 282,
+        "open_cells": 9313,
+        "multi_span_cells": 519,
+        "diagonal_cells": 118,
+        "shapes": [
+          "U",
+          "chamfer",
+          "hex",
+          "octagon",
+          "rect"
+        ],
+        "storeys": 2,
+        "connectors": {
+          "stairwell": 4,
+          "lift": 0,
+          "ladder": 0,
+          "spiral": 0
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 6,
+        "galleries": 1,
+        "halls": 2,
+        "open_areas": 1,
+        "hall_rooms": 5,
+        "z_range": [
+          -80,
+          640
+        ]
+      }
+    },
+    {
+      "code": "c1m4",
+      "title": "The Sunken Basilica",
+      "campaign": 1,
+      "level_index": 4,
+      "seed": 419,
+      "style": "egyptian",
+      "recipe": "fortress",
+      "stats": {
+        "seed": 419,
+        "grid": [
+          431,
+          150
+        ],
+        "rooms": 22,
+        "corridors": 23,
+        "entities": 327,
+        "open_cells": 11146,
+        "multi_span_cells": 1088,
+        "diagonal_cells": 150,
+        "shapes": [
+          "hex",
+          "rect",
+          "round"
+        ],
+        "storeys": 3,
+        "connectors": {
+          "stairwell": 3,
+          "lift": 1,
+          "ladder": 0,
+          "spiral": 2
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 4,
+        "galleries": 1,
+        "halls": 2,
+        "open_areas": 1,
+        "hall_rooms": 4,
+        "z_range": [
+          -32,
+          992
+        ]
+      }
+    },
+    {
+      "code": "c1m5",
+      "title": "Altar of the Elder God",
+      "campaign": 1,
+      "level_index": 5,
+      "seed": 523,
+      "style": "gothic",
+      "recipe": "fortress",
+      "stats": {
+        "seed": 523,
+        "grid": [
+          211,
+          313
+        ],
+        "rooms": 19,
+        "corridors": 19,
+        "entities": 344,
+        "open_cells": 11787,
+        "multi_span_cells": 124,
+        "diagonal_cells": 242,
+        "shapes": [
+          "L",
+          "Z",
+          "chamfer",
+          "hex",
+          "rect",
+          "round"
+        ],
+        "storeys": 3,
+        "connectors": {
+          "stairwell": 1,
+          "lift": 0,
+          "ladder": 1,
+          "spiral": 0
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 3,
+        "galleries": 0,
+        "halls": 2,
+        "open_areas": 1,
+        "hall_rooms": 4,
+        "z_range": [
+          -32,
+          1152
+        ]
+      }
+    },
+    {
+      "code": "c2m1",
+      "title": "Perimeter Breach",
+      "campaign": 2,
+      "level_index": 1,
+      "seed": 601,
+      "style": "bunker",
+      "recipe": "bunker",
+      "stats": {
+        "seed": 601,
+        "grid": [
+          118,
+          141
+        ],
+        "rooms": 12,
+        "corridors": 12,
+        "entities": 114,
+        "open_cells": 2898,
+        "multi_span_cells": 80,
+        "diagonal_cells": 48,
+        "shapes": [
+          "chamfer",
+          "hex",
+          "rect",
+          "round"
+        ],
+        "storeys": 2,
+        "connectors": {
+          "stairwell": 0,
+          "lift": 0,
+          "ladder": 1,
+          "spiral": 0
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 3,
+        "galleries": 0,
+        "halls": 0,
+        "open_areas": 0,
+        "hall_rooms": 0,
+        "z_range": [
+          -32,
+          608
+        ]
+      }
+    },
+    {
+      "code": "c2m2",
+      "title": "Slag Processing Works",
+      "campaign": 2,
+      "level_index": 2,
+      "seed": 709,
+      "style": "industrial",
+      "recipe": "industrial",
+      "stats": {
+        "seed": 709,
+        "grid": [
+          302,
+          172
+        ],
+        "rooms": 13,
+        "corridors": 10,
+        "entities": 227,
+        "open_cells": 9582,
+        "multi_span_cells": 70,
+        "diagonal_cells": 86,
+        "shapes": [
+          "U",
+          "hex",
+          "rect"
+        ],
+        "storeys": 2,
+        "connectors": {
+          "stairwell": 0,
+          "lift": 0,
+          "ladder": 1,
+          "spiral": 0
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 0,
+        "galleries": 0,
+        "halls": 3,
+        "open_areas": 1,
+        "hall_rooms": 7,
+        "z_range": [
+          -32,
+          912
+        ]
+      }
+    },
+    {
+      "code": "c2m3",
+      "title": "Logistics Compound",
+      "campaign": 2,
+      "level_index": 3,
+      "seed": 811,
+      "style": "compound",
+      "recipe": "compound",
+      "stats": {
+        "seed": 811,
+        "grid": [
+          328,
+          242
+        ],
+        "rooms": 15,
+        "corridors": 15,
+        "entities": 330,
+        "open_cells": 14775,
+        "multi_span_cells": 309,
+        "diagonal_cells": 135,
+        "shapes": [
+          "H",
+          "chamfer",
+          "diamond",
+          "rect"
+        ],
+        "storeys": 1,
+        "connectors": {
+          "stairwell": 0,
+          "lift": 0,
+          "ladder": 0,
+          "spiral": 0
+        },
+        "links": 4,
+        "drops": 0,
+        "windows": 7,
+        "galleries": 0,
+        "halls": 2,
+        "open_areas": 2,
+        "hall_rooms": 5,
+        "z_range": [
+          -32,
+          624
+        ]
+      }
+    },
+    {
+      "code": "c2m4",
+      "title": "Reactor Sub-Level 9",
+      "campaign": 2,
+      "level_index": 4,
+      "seed": 919,
+      "style": "scifi",
+      "recipe": "bunker",
+      "stats": {
+        "seed": 919,
+        "grid": [
+          255,
+          154
+        ],
+        "rooms": 21,
+        "corridors": 22,
+        "entities": 165,
+        "open_cells": 4838,
+        "multi_span_cells": 427,
+        "diagonal_cells": 63,
+        "shapes": [
+          "L",
+          "chamfer",
+          "diamond",
+          "rect",
+          "round"
+        ],
+        "storeys": 3,
+        "connectors": {
+          "stairwell": 0,
+          "lift": 1,
+          "ladder": 1,
+          "spiral": 2
+        },
+        "links": 2,
+        "drops": 0,
+        "windows": 2,
+        "galleries": 1,
+        "halls": 1,
+        "open_areas": 0,
+        "hall_rooms": 2,
+        "z_range": [
+          -32,
+          928
+        ]
+      }
+    },
+    {
+      "code": "c2m5",
+      "title": "The Iron Citadel Core",
+      "campaign": 2,
+      "level_index": 5,
+      "seed": 1031,
+      "style": "scifi",
+      "recipe": "industrial",
+      "stats": {
+        "seed": 1031,
+        "grid": [
+          277,
+          333
+        ],
+        "rooms": 24,
+        "corridors": 25,
+        "entities": 382,
+        "open_cells": 15198,
+        "multi_span_cells": 1689,
+        "diagonal_cells": 146,
+        "shapes": [
+          "L",
+          "Z",
+          "chamfer",
+          "hex",
+          "octagon",
+          "rect",
+          "round"
+        ],
+        "storeys": 3,
+        "connectors": {
+          "stairwell": 4,
+          "lift": 0,
+          "ladder": 1,
+          "spiral": 2
+        },
+        "links": 1,
+        "drops": 0,
+        "windows": 7,
+        "galleries": 1,
+        "halls": 1,
+        "open_areas": 1,
+        "hall_rooms": 2,
+        "z_range": [
+          -32,
+          1248
+        ]
+      }
+    }
+  ]
+}

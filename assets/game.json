@@ -1,0 +1,8 @@
+{
+  "gameTitle": "Starforge Outpost: Crystal Defense",
+  "maxWaves": 3,
+  "preferredBackend": "Vulkan",
+  "startupScene": "assets/scenes/starforge_outpost.hscene",
+  "windowHeight": 850,
+  "windowWidth": 1440
+}
