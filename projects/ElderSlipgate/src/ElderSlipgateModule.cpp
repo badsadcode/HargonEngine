@@ -25,6 +25,7 @@ namespace Hargon
             else
                 m_FPSGame.SetProjectRootDir("");
 
+            m_FPSGame.SetHostManagesCursor(true);
             if (!m_FPSGame.Init(ctx.scene, ctx.renderer, ctx.audio, ctx.window, isPlayMode))
                 return false;
 
@@ -73,6 +74,7 @@ namespace Hargon
 
         bool HandlesEditorAnimationPreview() const override { return false; }
         bool ShouldDrawEditorGrid() const override { return false; }
+        bool WantsCursorCapture() const override { return m_FPSGame.WantsCursorCapture(); }
 
         bool HasPreferredEditorCameraPose(float& outYaw, float& outPitch) const override
         {

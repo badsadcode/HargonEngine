@@ -262,6 +262,299 @@ namespace Hargon
         }
     }
 
+    static glm::vec3 ExtractEulerYXZDegrees(const glm::mat3& rotMat)
+    {
+        float sx = glm::clamp(-rotMat[2][1], -1.0f, 1.0f);
+        float rx = std::asin(sx);
+        float ry = 0.0f;
+        float rz = 0.0f;
+
+        if (std::abs(std::cos(rx)) > 1e-4f)
+        {
+            ry = std::atan2(rotMat[2][0], rotMat[2][2]);
+            rz = std::atan2(rotMat[0][1], rotMat[1][1]);
+        }
+        else
+        {
+            ry = std::atan2(-rotMat[0][2], rotMat[0][0]);
+            rz = 0.0f;
+        }
+        return glm::degrees(glm::vec3(rx, ry, rz));
+    }
+
+    bool Scene::CanReparent(EntityID childId, EntityID newParentId) const
+    {
+        if (childId == kInvalidEntity || !GetEntity(childId))
+            return false;
+        if (newParentId == kInvalidEntity)
+            return true;
+        if (childId == newParentId || !GetEntity(newParentId))
+            return false;
+
+        EntityID cur = newParentId;
+        size_t guard = 0;
+        while (cur != kInvalidEntity && guard < m_Entities.size() + 4)
+        {
+            if (cur == childId)
+                return false;
+            const Entity* e = GetEntity(cur);
+            cur = e ? e->parentId : kInvalidEntity;
+            ++guard;
+        }
+        return true;
+    }
+
+    bool Scene::SetParentKeepWorld(EntityID childId, EntityID newParentId)
+    {
+        if (!CanReparent(childId, newParentId))
+            return false;
+
+        Entity* child = GetEntity(childId);
+        if (!child)
+            return false;
+        if (child->parentId == newParentId)
+            return true;
+
+        glm::mat4 worldMat = GetWorldMatrix(*child);
+        if (!SetParent(childId, newParentId))
+            return false;
+
+        child = GetEntity(childId);
+        glm::mat4 parentWorld(1.0f);
+        if (newParentId != kInvalidEntity)
+        {
+            if (const Entity* p = GetEntity(newParentId))
+                parentWorld = GetWorldMatrix(*p);
+        }
+
+        glm::mat4 localMat = (std::abs(glm::determinant(parentWorld)) > 1e-10f)
+            ? (glm::inverse(parentWorld) * worldMat)
+            : worldMat;
+
+        child->transform.position = glm::vec3(localMat[3]);
+
+        glm::vec3 sx = glm::vec3(localMat[0]);
+        glm::vec3 sy = glm::vec3(localMat[1]);
+        glm::vec3 sz = glm::vec3(localMat[2]);
+        float lx = glm::length(sx);
+        float ly = glm::length(sy);
+        float lz = glm::length(sz);
+        if (lx < 1e-6f) { sx = glm::vec3(1, 0, 0); lx = 1e-6f; } else sx /= lx;
+        if (ly < 1e-6f) { sy = glm::vec3(0, 1, 0); ly = 1e-6f; } else sy /= ly;
+        if (lz < 1e-6f) { sz = glm::vec3(0, 0, 1); lz = 1e-6f; } else sz /= lz;
+
+        glm::mat3 rotMat(sx, sy, sz);
+        if (glm::determinant(rotMat) < 0.0f)
+        {
+            lx = -lx;
+            rotMat[0] = -rotMat[0];
+        }
+
+        child->transform.scale = glm::vec3(lx, ly, lz);
+        child->transform.rotation = ExtractEulerYXZDegrees(rotMat);
+        return true;
+    }
+
+    bool Scene::ReorderEntity(EntityID sourceId, EntityID targetId, bool insertAfter)
+    {
+        if (sourceId == kInvalidEntity || targetId == kInvalidEntity || sourceId == targetId)
+            return false;
+
+        int srcIdx = -1;
+        int dstIdx = -1;
+        for (int i = 0; i < static_cast<int>(m_Entities.size()); ++i)
+        {
+            if (m_Entities[i].id == sourceId) srcIdx = i;
+            if (m_Entities[i].id == targetId) dstIdx = i;
+        }
+        if (srcIdx < 0 || dstIdx < 0)
+            return false;
+
+        Entity moved = m_Entities[srcIdx];
+        EntityID movedParent = moved.parentId;
+        m_Entities.erase(m_Entities.begin() + srcIdx);
+        if (srcIdx < dstIdx)
+            --dstIdx;
+
+        int insertIdx = dstIdx + (insertAfter ? 1 : 0);
+        insertIdx = std::clamp(insertIdx, 0, static_cast<int>(m_Entities.size()));
+        m_Entities.insert(m_Entities.begin() + insertIdx, std::move(moved));
+
+        if (movedParent != kInvalidEntity)
+        {
+            if (Entity* parent = GetEntity(movedParent))
+            {
+                parent->childrenIds.clear();
+                for (const auto& e : m_Entities)
+                {
+                    if (e.alive && e.parentId == movedParent)
+                        parent->childrenIds.push_back(e.id);
+                }
+            }
+        }
+        return true;
+    }
+
+    void Scene::CollectSubtree(EntityID rootId, std::vector<EntityID>& outIds) const
+    {
+        outIds.clear();
+        if (!GetEntity(rootId))
+            return;
+
+        std::function<void(EntityID)> dfs = [&](EntityID cur) {
+            if (std::find(outIds.begin(), outIds.end(), cur) != outIds.end())
+                return;
+            outIds.push_back(cur);
+            for (const auto& e : m_Entities)
+            {
+                if (e.alive && e.parentId == cur)
+                    dfs(e.id);
+            }
+        };
+        dfs(rootId);
+    }
+
+    void Scene::DestroySubtree(EntityID rootId)
+    {
+        std::vector<EntityID> ids;
+        CollectSubtree(rootId, ids);
+        for (EntityID id : ids)
+            DestroyEntity(id);
+        FlushDestroyedEntities();
+    }
+
+    EntityID Scene::DuplicateSubtree(EntityID sourceId, const glm::vec3& offset)
+    {
+        std::vector<EntityID> ids;
+        CollectSubtree(sourceId, ids);
+        if (ids.empty())
+            return kInvalidEntity;
+
+        const Entity* srcRoot = GetEntity(sourceId);
+        EntityID origRootParent = srcRoot ? srcRoot->parentId : kInvalidEntity;
+
+        std::vector<Entity> snapshots;
+        snapshots.reserve(ids.size());
+        for (EntityID id : ids)
+        {
+            if (const Entity* e = GetEntity(id))
+                snapshots.push_back(*e);
+        }
+
+        std::unordered_map<EntityID, EntityID> oldToNew;
+        for (const Entity& snap : snapshots)
+        {
+            Entity& dup = CreateEntity(snap.tag.name, snap.tag.tag);
+            EntityID assignedId = dup.id;
+            dup = snap;
+            dup.id = assignedId;
+            dup.alive = true;
+            dup.parentId = kInvalidEntity;
+            dup.childrenIds.clear();
+            oldToNew[snap.id] = assignedId;
+        }
+
+        for (const Entity& snap : snapshots)
+        {
+            EntityID newId = oldToNew[snap.id];
+            Entity* dup = GetEntity(newId);
+            if (!dup) continue;
+            if (snap.id == sourceId)
+            {
+                dup->tag.name += " Copy";
+                dup->transform.position += offset;
+                SetParent(newId, origRootParent);
+            }
+            else
+            {
+                auto it = oldToNew.find(snap.parentId);
+                EntityID newParent = (it != oldToNew.end()) ? it->second : kInvalidEntity;
+                SetParent(newId, newParent);
+            }
+        }
+
+        return oldToNew[sourceId];
+    }
+
+    EntityID Scene::GroupEntities(const std::vector<EntityID>& entityIds, const std::string& groupName)
+    {
+        std::vector<EntityID> validTopLevel;
+        for (EntityID id : entityIds)
+        {
+            const Entity* e = GetEntity(id);
+            if (!e || !e->alive) continue;
+
+            bool ancestorSelected = false;
+            EntityID cur = e->parentId;
+            size_t guard = 0;
+            while (cur != kInvalidEntity && guard < m_Entities.size() + 4)
+            {
+                if (std::find(entityIds.begin(), entityIds.end(), cur) != entityIds.end())
+                {
+                    ancestorSelected = true;
+                    break;
+                }
+                const Entity* p = GetEntity(cur);
+                cur = p ? p->parentId : kInvalidEntity;
+                ++guard;
+            }
+            if (!ancestorSelected && std::find(validTopLevel.begin(), validTopLevel.end(), id) == validTopLevel.end())
+                validTopLevel.push_back(id);
+        }
+
+        if (validTopLevel.empty())
+            return kInvalidEntity;
+
+        glm::vec3 centroid(0.0f);
+        EntityID commonParent = GetEntity(validTopLevel[0])->parentId;
+        for (EntityID id : validTopLevel)
+        {
+            const Entity* e = GetEntity(id);
+            centroid += GetWorldPosition(*e);
+            if (e->parentId != commonParent)
+                commonParent = kInvalidEntity;
+        }
+        centroid /= static_cast<float>(validTopLevel.size());
+
+        Entity& group = CreateEntity(groupName.empty() ? "Group" : groupName, "Group");
+        group.mesh.enabled = false;
+        group.hasMesh = false;
+        EntityID groupId = group.id;
+        if (commonParent != kInvalidEntity)
+        {
+            if (const Entity* p = GetEntity(commonParent))
+            {
+                glm::mat4 pWorld = GetWorldMatrix(*p);
+                if (std::abs(glm::determinant(pWorld)) > 1e-10f)
+                    group.transform.position = glm::vec3(glm::inverse(pWorld) * glm::vec4(centroid, 1.0f));
+                else
+                    group.transform.position = centroid;
+            }
+            SetParent(groupId, commonParent);
+        }
+        else
+        {
+            group.transform.position = centroid;
+        }
+
+        for (EntityID id : validTopLevel)
+            SetParentKeepWorld(id, groupId);
+
+        return groupId;
+    }
+
+    glm::mat3 Scene::GetWorldRotationBasis(const Entity& e) const
+    {
+        glm::mat4 world = GetWorldMatrix(e);
+        glm::vec3 x = glm::vec3(world[0]);
+        glm::vec3 y = glm::vec3(world[1]);
+        glm::vec3 z = glm::vec3(world[2]);
+        x = (glm::length(x) > 1e-6f) ? glm::normalize(x) : glm::vec3(1, 0, 0);
+        y = (glm::length(y) > 1e-6f) ? glm::normalize(y) : glm::vec3(0, 1, 0);
+        z = (glm::length(z) > 1e-6f) ? glm::normalize(z) : glm::vec3(0, 0, 1);
+        return glm::mat3(x, y, z);
+    }
+
     static bool RayIntersectAABB(const glm::vec3& orig, const glm::vec3& dir, const glm::vec3& bmin, const glm::vec3& bmax, float& tHit)
     {
         float tmin = -std::numeric_limits<float>::infinity();
@@ -269,7 +562,7 @@ namespace Hargon
 
         for (int a = 0; a < 3; ++a)
         {
-            if (std::abs(dir[a]) < 1e-6f)
+            if (std::abs(dir[a]) < 1e-8f)
             {
                 if (orig[a] < bmin[a] || orig[a] > bmax[a])
                     return false;
@@ -291,34 +584,84 @@ namespace Hargon
         return true;
     }
 
-    EntityID Scene::Raycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float* outDist) const
+    static bool RayIntersectSphere(const glm::vec3& orig, const glm::vec3& unitDir, const glm::vec3& center, float radius, float& tHit)
     {
+        glm::vec3 oc = orig - center;
+        float b = glm::dot(oc, unitDir);
+        float c = glm::dot(oc, oc) - radius * radius;
+        float disc = b * b - c;
+        if (disc < 0.0f) return false;
+        float sq = std::sqrt(disc);
+        float t = -b - sq;
+        if (t < 0.0f) t = -b + sq;
+        if (t < 0.0f) return false;
+        tHit = t;
+        return true;
+    }
+
+    EntityID Scene::Raycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float* outDist, const BoundsLookupFn& boundsLookup) const
+    {
+        float dirLen = glm::length(rayDir);
+        if (dirLen < 1e-8f) return kInvalidEntity;
+        glm::vec3 unitDir = rayDir / dirLen;
+
         float bestDist = std::numeric_limits<float>::max();
         EntityID bestEntity = kInvalidEntity;
 
         for (const auto& e : m_Entities)
         {
-            if (!e.alive || !e.mesh.enabled)
+            if (!e.alive)
                 continue;
 
-            // Skip large ground plane unless nothing else is hit
-            bool isGround = (e.tag.tag == "Environment" && std::max(e.transform.scale.x, e.transform.scale.z) > 30.0f);
-
-            glm::vec3 halfExt = e.transform.scale * 0.55f;
-            halfExt = glm::max(halfExt, glm::vec3(0.25f));
-            glm::vec3 bmin = e.transform.position - halfExt;
-            glm::vec3 bmax = e.transform.position + halfExt;
-
-            float t = 0.0f;
-            if (RayIntersectAABB(rayOrigin, rayDir, bmin, bmax, t))
+            if (e.mesh.enabled)
             {
-                if (isGround)
-                    t += 500.0f; // deprioritize floor so objects on it are easy to pick
-
-                if (t < bestDist)
+                glm::vec3 bmin(-0.5f), bmax(0.5f);
+                if (boundsLookup)
                 {
-                    bestDist = t;
-                    bestEntity = e.id;
+                    glm::vec3 qmin, qmax;
+                    if (boundsLookup(e.mesh, qmin, qmax))
+                    {
+                        bmin = qmin;
+                        bmax = qmax;
+                    }
+                }
+                for (int a = 0; a < 3; ++a)
+                {
+                    if (bmax[a] - bmin[a] < 0.02f)
+                    {
+                        bmin[a] -= 0.01f;
+                        bmax[a] += 0.01f;
+                    }
+                }
+
+                glm::mat4 world = GetWorldMatrix(e);
+                if (std::abs(glm::determinant(world)) <= 1e-10f)
+                    continue;
+                glm::mat4 invWorld = glm::inverse(world);
+                glm::vec3 localOrig = glm::vec3(invWorld * glm::vec4(rayOrigin, 1.0f));
+                glm::vec3 localDir  = glm::vec3(invWorld * glm::vec4(unitDir, 0.0f));
+
+                float t = 0.0f;
+                if (RayIntersectAABB(localOrig, localDir, bmin, bmax, t))
+                {
+                    if (t >= 0.0f && t < bestDist)
+                    {
+                        bestDist = t;
+                        bestEntity = e.id;
+                    }
+                }
+            }
+            else if (e.light.enabled || e.camera.enabled || e.particleEmitter.enabled)
+            {
+                glm::vec3 worldPos = GetWorldPosition(e);
+                float t = 0.0f;
+                if (RayIntersectSphere(rayOrigin, unitDir, worldPos, 0.45f, t))
+                {
+                    if (t >= 0.0f && t < bestDist)
+                    {
+                        bestDist = t;
+                        bestEntity = e.id;
+                    }
                 }
             }
         }
@@ -328,6 +671,128 @@ namespace Hargon
         return bestEntity;
     }
 
+    bool Scene::RaycastSurface(const glm::vec3& rayOrigin, const glm::vec3& rayDir, EntityID ignoreEntity, float& outHitDist, glm::vec3& outHitPos, const BoundsLookupFn& boundsLookup) const
+    {
+        float dirLen = glm::length(rayDir);
+        if (dirLen < 1e-8f) return false;
+        glm::vec3 unitDir = rayDir / dirLen;
+
+        std::vector<EntityID> ignored;
+        if (ignoreEntity != kInvalidEntity)
+            CollectSubtree(ignoreEntity, ignored);
+
+        float bestDist = std::numeric_limits<float>::max();
+        bool found = false;
+
+        for (const auto& e : m_Entities)
+        {
+            if (!e.alive || !e.mesh.enabled)
+                continue;
+            if (std::find(ignored.begin(), ignored.end(), e.id) != ignored.end())
+                continue;
+
+            glm::vec3 bmin(-0.5f), bmax(0.5f);
+            if (boundsLookup)
+            {
+                glm::vec3 qmin, qmax;
+                if (boundsLookup(e.mesh, qmin, qmax))
+                {
+                    bmin = qmin;
+                    bmax = qmax;
+                }
+            }
+            for (int a = 0; a < 3; ++a)
+            {
+                if (bmax[a] - bmin[a] < 0.02f)
+                {
+                    bmin[a] -= 0.01f;
+                    bmax[a] += 0.01f;
+                }
+            }
+
+            glm::mat4 world = GetWorldMatrix(e);
+            if (std::abs(glm::determinant(world)) <= 1e-10f)
+                continue;
+            glm::mat4 invWorld = glm::inverse(world);
+            glm::vec3 localOrig = glm::vec3(invWorld * glm::vec4(rayOrigin, 1.0f));
+            glm::vec3 localDir  = glm::vec3(invWorld * glm::vec4(unitDir, 0.0f));
+
+            float t = 0.0f;
+            if (RayIntersectAABB(localOrig, localDir, bmin, bmax, t))
+            {
+                if (t >= 0.0f && t < bestDist)
+                {
+                    bestDist = t;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) return false;
+        outHitDist = bestDist;
+        outHitPos = rayOrigin + unitDir * bestDist;
+        return true;
+    }
+
+    bool Scene::DropEntityToSurface(EntityID entityId, const BoundsLookupFn& boundsLookup)
+    {
+        Entity* e = GetEntity(entityId);
+        if (!e || !e->alive) return false;
+
+        glm::mat4 world = GetWorldMatrix(*e);
+        glm::vec3 worldPos = glm::vec3(world[3]);
+
+        float minWorldY = worldPos.y;
+        if (e->mesh.enabled)
+        {
+            glm::vec3 bmin(-0.5f), bmax(0.5f);
+            if (boundsLookup)
+            {
+                glm::vec3 qmin, qmax;
+                if (boundsLookup(e->mesh, qmin, qmax))
+                {
+                    bmin = qmin;
+                    bmax = qmax;
+                }
+            }
+            minWorldY = std::numeric_limits<float>::max();
+            for (int cx = 0; cx < 2; ++cx)
+            for (int cy = 0; cy < 2; ++cy)
+            for (int cz = 0; cz < 2; ++cz)
+            {
+                glm::vec3 corner(
+                    cx ? bmax.x : bmin.x,
+                    cy ? bmax.y : bmin.y,
+                    cz ? bmax.z : bmin.z);
+                glm::vec3 wc = glm::vec3(world * glm::vec4(corner, 1.0f));
+                minWorldY = std::min(minWorldY, wc.y);
+            }
+        }
+
+        glm::vec3 rayOrigin(worldPos.x, minWorldY + 0.35f, worldPos.z);
+        float hitDist = 0.0f;
+        glm::vec3 hitPos(0.0f);
+        if (!RaycastSurface(rayOrigin, glm::vec3(0.0f, -1.0f, 0.0f), entityId, hitDist, hitPos, boundsLookup))
+            return false;
+
+        float deltaY = hitPos.y - minWorldY;
+        glm::vec3 targetWorldPos = worldPos + glm::vec3(0.0f, deltaY, 0.0f);
+
+        if (e->parentId != kInvalidEntity)
+        {
+            if (const Entity* p = GetEntity(e->parentId))
+            {
+                glm::mat4 pWorld = GetWorldMatrix(*p);
+                if (std::abs(glm::determinant(pWorld)) > 1e-10f)
+                {
+                    e->transform.position = glm::vec3(glm::inverse(pWorld) * glm::vec4(targetWorldPos, 1.0f));
+                    return true;
+                }
+            }
+        }
+        e->transform.position = targetWorldPos;
+        return true;
+    }
 
     bool Scene::ShouldProcessEntity(const Entity& e, bool isPaused) const
     {

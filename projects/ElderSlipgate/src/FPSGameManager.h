@@ -158,6 +158,8 @@ namespace Hargon
         void SpawnMeatExplosionGibs(const glm::vec3& pos, int gibCount = 7);
 
         // Accessors
+        void SetHostManagesCursor(bool hostManages) { m_HostManagesCursor = hostManages; }
+        bool WantsCursorCapture() const { return m_MenuState == FPSMenuState::None; }
         FPSMenuState GetMenuState() const { return m_MenuState; }
         void SetMenuState(FPSMenuState state);
         bool IsInMenu() const { return m_MenuState != FPSMenuState::None; }
@@ -210,6 +212,7 @@ namespace Hargon
         AudioEngine* m_Audio = nullptr;
         Window* m_Window = nullptr;
         std::string m_ProjectRootDir;
+        bool m_HostManagesCursor = false;
 
         // Campaign & Level Metadata
         int m_Campaign = 1;       // 1 = The Elder Ward, 2 = The Iron Citadel

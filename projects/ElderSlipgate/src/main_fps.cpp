@@ -77,6 +77,7 @@ int main(int argc, char** argv)
 
     Hargon::Scene scene;
     Hargon::FPSGameManager fps;
+    fps.SetHostManagesCursor(true);
     fps.SetProjectRootDir(cfg.projectRootDir);
     if (!fps.Init(&scene, &renderer, &audio, &window, true))
     {
@@ -153,6 +154,7 @@ int main(int argc, char** argv)
         }
 
         fps.Step(dt);
+        window.SetCursorCaptured(!autoTest && window.IsFocused() && fps.WantsCursorCapture());
         fps.UpdateFirstPersonCamera(cam, dt);
         cam.aspectRatio = static_cast<float>(rhi.GetWidth()) / std::max(1.0f, static_cast<float>(rhi.GetHeight()));
 

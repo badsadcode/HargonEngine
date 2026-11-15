@@ -112,7 +112,7 @@ namespace Hargon
     void FPSGameManager::SetMenuState(FPSMenuState state)
     {
         m_MenuState = state;
-        if (m_Window)
+        if (m_Window && !m_HostManagesCursor)
         {
             if (m_MenuState == FPSMenuState::None)
                 m_Window->SetCursorCaptured(true);
@@ -1906,7 +1906,8 @@ namespace Hargon
         // 1. Player Mouse Look & Keyboard Turning + Weapon Selection (1..5 or Scroll Wheel)
         if (m_Window)
         {
-            if (m_Window->IsCursorCaptured() || m_Window->IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))
+            bool allowMouseInput = (!m_HostManagesCursor || m_Window->IsCursorCaptured());
+            if (allowMouseInput || m_Window->IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))
             {
                 glm::vec2 md = m_Window->GetMouseDelta();
                 m_PlayerYaw   += md.x * m_Settings.mouseSensitivity;
@@ -1927,7 +1928,7 @@ namespace Hargon
                     SelectWeapon(w);
             }
 
-            float scroll = m_Window->GetScrollDelta();
+            float scroll = allowMouseInput ? m_Window->GetScrollDelta() : 0.0f;
             if (std::abs(scroll) > 0.1f)
             {
                 int dir = (scroll > 0.0f) ? 1 : -1;
@@ -2024,8 +2025,10 @@ namespace Hargon
                 }
             }
 
-            // Fire weapon with Left Mouse Button, F, or Enter
-            if (m_Window->IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) || m_Window->IsKeyDown(GLFW_KEY_F) || m_Window->IsKeyDown(GLFW_KEY_ENTER))
+            // Fire weapon with Left Mouse Button (only when captured/standalone), F, or Enter
+            bool allowLmbFire = (!m_HostManagesCursor || m_Window->IsCursorCaptured());
+            if ((allowLmbFire && m_Window->IsMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) ||
+                m_Window->IsKeyDown(GLFW_KEY_F) || m_Window->IsKeyDown(GLFW_KEY_ENTER))
             {
                 FireCurrentWeapon();
             }

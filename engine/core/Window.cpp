@@ -28,6 +28,13 @@ namespace Hargon
             self->OnScroll(xoff, yoff);
     }
 
+    static void FocusCallback(GLFWwindow* win, int focused)
+    {
+        auto* self = static_cast<Window*>(glfwGetWindowUserPointer(win));
+        if (self)
+            self->OnFocusChanged(focused == GLFW_TRUE);
+    }
+
     Window::~Window()
     {
         Shutdown();
@@ -60,6 +67,8 @@ namespace Hargon
         glfwSetWindowUserPointer(m_Window, this);
         glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
         glfwSetScrollCallback(m_Window, ScrollCallback);
+        glfwSetWindowFocusCallback(m_Window, FocusCallback);
+        m_Focused = (glfwGetWindowAttrib(m_Window, GLFW_FOCUSED) == GLFW_TRUE);
 
         int fbW = 0, fbH = 0;
         glfwGetFramebufferSize(m_Window, &fbW, &fbH);
@@ -128,6 +137,21 @@ namespace Hargon
             glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
     }
 
+    void Window::ClearCloseRequest()
+    {
+        if (m_Window)
+            glfwSetWindowShouldClose(m_Window, GLFW_FALSE);
+    }
+
+    float Window::GetContentScale() const
+    {
+        if (!m_Window)
+            return 1.0f;
+        float xs = 1.0f, ys = 1.0f;
+        glfwGetWindowContentScale(m_Window, &xs, &ys);
+        return std::max(0.75f, std::max(xs, ys));
+    }
+
     void* Window::GetWin32Handle() const
     {
 #ifdef _WIN32
@@ -179,6 +203,10 @@ namespace Hargon
 
     void Window::SetCursorCaptured(bool captured)
     {
+        if (captured && !m_Focused)
+            captured = false;
+        if (m_CursorCaptured == captured)
+            return;
         m_CursorCaptured = captured;
         if (m_Window)
         {
@@ -253,5 +281,12 @@ namespace Hargon
     void Window::OnScroll(double /*xoffset*/, double yoffset)
     {
         m_PendingScroll += static_cast<float>(yoffset);
+    }
+
+    void Window::OnFocusChanged(bool focused)
+    {
+        m_Focused = focused;
+        if (!focused && m_CursorCaptured)
+            SetCursorCaptured(false);
     }
 }

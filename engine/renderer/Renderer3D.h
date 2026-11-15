@@ -82,7 +82,9 @@ namespace Hargon
             EntityID selectedEntity = kInvalidEntity,
             GizmoMode gizmoMode = GizmoMode::Translate,
             int hoveredGizmoAxis = -1,
-            bool drawColliders = false);
+            bool drawColliders = false,
+            bool localGizmoSpace = false,
+            const std::vector<EntityID>* additionalSelected = nullptr);
 
         // Ray-test against the 3D Transform Gizmo axes (returns 0=X, 1=Y, 2=Z, or -1=None)
         int RaycastGizmo(
@@ -90,7 +92,10 @@ namespace Hargon
             const CameraView& camera,
             const glm::vec3& rayOrigin,
             const glm::vec3& rayDir,
-            float* outAxisScale = nullptr) const;
+            float* outAxisScale = nullptr,
+            const glm::mat3& gizmoBasis = glm::mat3(1.0f)) const;
+
+        bool TryGetMeshLocalBounds(const MeshComponent& meshComp, glm::vec3& outMin, glm::vec3& outMax) const;
 
         const RenderStats& GetStats() const { return m_Stats; }
 
@@ -102,7 +107,7 @@ namespace Hargon
         void AddLine(std::vector<LineVertex>& lines, const glm::vec3& a, const glm::vec3& b, const glm::vec4& color);
         void AddWireBox(std::vector<LineVertex>& lines, const glm::vec3& center, const glm::vec3& halfExtents, const glm::vec4& color);
         void AddWireSphere(std::vector<LineVertex>& lines, const glm::vec3& center, float radius, const glm::vec4& color);
-        void BuildGizmoLines(std::vector<LineVertex>& lines, const glm::vec3& center, float scale, GizmoMode mode, int hoveredAxis);
+        void BuildGizmoLines(std::vector<LineVertex>& lines, const glm::vec3& center, float scale, GizmoMode mode, int hoveredAxis, const glm::mat3& basis = glm::mat3(1.0f));
 
     private:
         RHIDevice* m_RHI = nullptr;

@@ -224,13 +224,66 @@ So we gave project loading a proper front door and a broom:
 
 ---
 
+## Chapter 9: The Mouse Tug-of-War, the Telephone-Number Chair, and Freeing the Panels
+
+Just when we thought opening projects cleanly was the end of our editor comedy acts, we took an honest look at using **HargonEditor** for actual everyday work — and uncovered three simultaneous sitcom plots living inside our own interface.
+
+### 1. The Great Mouse Hostage Crisis
+
+For weeks, opening *Elder Slipgate* inside the editor came with a magic trick nobody asked for: **your mouse cursor simply vanished**. You couldn't click buttons. You couldn't drag sliders. You had to guess where menus lived using pure spiritual intuition.
+
+And when we finally caught the culprits red-handed inside the code, it turned out the Editor and the FPS module were fighting a literal tug-of-war over who owned your mouse:
+1. Open *Elder Slipgate* -> the FPS game immediately shouted **"MINE!"** and locked the cursor inside an invisible FPS cage, even though you were just trying to edit a crate.
+2. Hit **Stop** -> the Editor carefully freed the mouse cursor... and two lines later politely told the FPS module Play Mode had ended, which reset the FPS menu state and **promptly locked your mouse inside the cage a second time**.
+
+Even **Uncle Wispr** was acquitted on all charges. (For once!)
+
+So we passed one simple golden rule: **only the host window owner decides when the OS cursor is captured**. Game modules now politely raise a hand (`WantsCursorCapture()`) instead of snatching the mouse out of your hand. In Edit Mode, Paused Mode, menus, modal popups, or whenever the window loses focus, your cursor is 100% visible — and during FPS Play Mode, it locks only once you click into the live viewport and unlocks the instant you press `ESC`, pause, or stop.
+
+### 2. "Please Enter the House's Numerical Identification Code"
+
+Next, we examined how everyday scene building felt in our previous panel setup:
+- Every single window was **nailed to the floor with concrete**: a rigid 280px list on the left, a rigid 350px inspector on the right, and a rigid 225px bar underneath. Dragging, resizing, floating, or rearranging panels? Nope. Welcome to architectural Brutalism.
+- Our **Scene Hierarchy** wasn't really a hierarchy — it was a flat checklist that drew `|-` in front of child names like a typewriter pretending to be a folder tree.
+- Best (worst?) of all, putting a chair inside a house required scrolling to an integer text box literally labeled **`Parent Node ID`** and typing the house's numeric ID by memory.
+
+> *"I've entered my telephone number,"* announced **Uncle Wispr**, squinting hopefully at a floating dining chair. *"Is the chair comfortable yet?"*
+
+- Meanwhile, our **Inspector** proudly displayed *every* component Hargon had ever heard of on *every* object in your scene — whether a humble stone pebble possessed a camera, a particle fountain, or a Lua brain or not.
+- And our previous Undo/Redo system tracked a single floating counter rather than your actual save point, meaning toggling something back could leave the editor lying about whether your work was saved — and switching entities while editing Lua could silently stomp unsaved code in a single buffer.
+
+### 3. Moving Into a Real Workshop
+
+So we tore down the drywall, split the monolithic editor UI into clean modular panels (`EditorWorkspace`, `HierarchyPanel`, `InspectorPanel`, `ViewportPanel`, `AssetBrowserPanel`, `ScriptEditorPanel`, `ConsolePanel`, and `ProjectManagerWindow`), and rebuilt the editor around how humans actually build games:
+
+- **Genuinely Dockable Workspace & 3 Presets**: Drag, resize, stack, hide, or undock panels freely; switch in one click between **Scene Editing**, **Scripting**, and **Materials & Lighting**; save your own custom `.hargon/layouts/*.ini` arrangements; scale the UI DPI cleanly; and check your save state (`*`) at a glance on the window title and status bar.
+- **Safety Rails for Your Sanity**: Creating a project no longer silently overwrites an existing folder; switching projects, reloading scenes, closing dirty Lua tabs, or closing the editor opens an explicit **Save / Discard / Cancel** dialog; `Save Scene As...` works properly; and rolling `.hargon/backups/` + a `session.lock` crash-recovery prompt make sure hard work doesn't evaporate.
+- **A Real Expandable Scene Tree**: Collapse branches, `Ctrl`/`Shift` multi-select, `F2` rename, drag-and-drop to reorder siblings or reparent while keeping exact world positions (`SetParentKeepWorld`), group selections (`Ctrl+G`), drop props onto surfaces (`End`), save reusable `.hprefab` prefabs, or pick parents by **human name** in a searchable dropdown.
+- **Clean Component-Only Inspector**: Only components actually attached to the selected entity appear (`+ Add Component` adds new ones on demand, with per-component Enable, Reset, Copy/Paste, Remove, property search, unclipped labels, and a dedicated dockable **World & Environment** panel).
+- **Accurate Picking, Local/World Gizmos & Undo**: Viewport ray picking now honors true offscreen viewport aspect ratios and tests rotated mesh OBBs accurately; gizmos support Local vs World axes, snapping, multi-selection transforms, `Shift+Drag` duplication, `Alt+LMB` orbit, `MMB` pan, and unified Undo/Redo with slider drag merging.
+- **Project-Scoped Asset Browser & Syntax-Highlighted Lua Editor**: Browse your project's own asset folders, import files with registered `.hassets.json` UIDs, drag `.hprefab`/`.obj`/`.lua`/`.wav` assets straight into the 3D Viewport, Hierarchy, or Inspector, edit multiple `.lua` files side-by-side with line numbers, Find/Replace, live Lua highlighting, and click console `[LUA]` errors to jump directly to the offending line.
+
+![HargonEditor Dockable Scene Editing Workspace showing real Scene Tree, 3D Viewport framing, Component Inspector, and Asset Browser](docs/devlog/images/16_editor_dockable_scene_editing.png)
+*No more concrete nails: resizable, genuinely dockable panels, a collapsible parent-child Hierarchy tree, component-only Inspector, and project-scoped Asset Browser framing Aether Realms in Scene Editing mode.*
+
+![Materials and Lighting workspace preset foregrounding World & Environment alongside Inspector and 3D Viewport](docs/devlog/images/17_editor_lighting_world_env.png)
+*One click to Materials & Lighting: Sky, Fog, SSAO, and AgX Tonemapping front-and-center with unclipped labels beside the Inspector.*
+
+![Scripting workspace preset showing multi-tab syntax-highlighted Lua Editor with gutter and diagnostics](docs/devlog/images/18_editor_lua_scripting_workspace.png)
+*Scripting workspace: full-width multi-tab Lua editor with line numbers, token colors, Find/Replace, and Console diagnostics next to a live Viewport preview.*
+
+![Live Play Mode inside HargonEditor 3D Viewport with clean unobscured game HUD](docs/devlog/images/19_editor_play_mode_clean_hud.png)
+*Live Play Mode inside the docked 3D Viewport: crisp game HUD with zero overlapping editor pills, Pause/Step/Stop controls, and clean cursor handling.*
+
+---
+
 ## Honest Confessions & What's Missing (So Far)
 
 A devlog that pretends everything is finished forever is lying to you, so here is where things genuinely stand today:
-- **History disclaimer**: Everything in this diary happened across real recorded commits, builds, screenshots, and logs — no bugs were embellished for dramatic flair (though the ceiling-mounted File menu really did require staring at a Vulkan coordinate helper for ten minutes in disbelief, and yes, an Acid Scrag genuinely spent an afternoon pretending to be our flashlight).
+- **History disclaimer**: Everything in this diary happened across real recorded commits, builds, screenshots, and logs — no bugs were embellished for dramatic flair (though the ceiling-mounted File menu really did require staring at a Vulkan coordinate helper for ten minutes in disbelief, an Acid Scrag genuinely spent an afternoon pretending to be our flashlight, and the FPS module really did lock our editor mouse twice out of sheer enthusiasm).
 - **Platform reality check**: While Hargon uses cross-platform libraries (`CMake`, `C++20`, `GLFW`, `NVRHI Vulkan`, `miniaudio`, `Lua`), only the **Windows (MSVC + Vulkan / D3D11, tested on RTX 3080)** build has actually been compiled, played, and visually verified in this repository so far. Linux and macOS remain untested on real hardware.
 - **Models & Animations**: Real-time sunlight now uses 2-Cascade PSSM alongside 8 six-face 360-degree point-light shadow casters and screen-space ambient occlusion, though animated characters and monsters still rely on parametric/composite primitives and static `.obj` meshes rather than full GLTF skeletal bone skinning.
-- **Editor conveniences**: You can create projects, edit hierarchies, inspect components, tune shadow Cascades/SSAO/Area3D/RayCast3D sliders, write/hot-reload Lua scripts, place prefabs, and export standalone executables — though a visual 3D asset drag-and-drop shelf and visual material graph are still wish-list items for future chapters.
+- **Editor & shader conveniences**: You now have a dockable multi-preset workspace, real Hierarchy tree, component-only Inspector, multi-select gizmos with OBB picking, Undo/Redo with dirty tracking and autosave recovery, project-scoped Asset Browser drag-and-drop shelf, and multi-tab syntax-highlighted Lua editor — while visual node-based material/shader graphs and in-editor asset thumbnails remain wish-list items for future chapters.
 
 ---
 

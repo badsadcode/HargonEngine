@@ -26,9 +26,20 @@ namespace Hargon
         // Resolves a scene/script/level path against CWD and config.projectRootDir
         static std::string ResolveProjectAssetPath(const GameProjectConfig& config, const std::string& assetPath);
 
-        // Opens a native file dialog (Windows) for selecting a .hproject or .hscene file
+        // Opens a native file dialog (Windows) for selecting or saving project files & assets
         static bool BrowseForProjectFile(std::string& outFilePath);
         static bool BrowseForSceneFile(std::string& outFilePath);
+        static bool BrowseSaveSceneFile(std::string& outFilePath, const std::string& initialDir = "");
+        static bool BrowseForAssetFile(std::string& outFilePath);
+
+        static std::string GetExecutableDirectoryPath();
+        static void EnsureProjectFolders(const GameProjectConfig& config);
+        static bool ImportAssetIntoProject(
+            const GameProjectConfig& config,
+            const std::string& sourceFilePath,
+            const std::string& categorySubdir,
+            std::string* outProjectRelPath = nullptr,
+            std::string* outError = nullptr);
 
         // Creates a brand-new game project directory, startup .hscene, and project.hproject file
         // templateType: 0 = Empty 3D Scene, 1 = 3D Floating-Island Action-Platformer, 2 = Sci-Fi Rover Defense, 3 = BadLevel FPS Dungeon

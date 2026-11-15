@@ -1,4 +1,5 @@
 #include "GameSystem.h"
+#include "../project/ProjectManager.h"
 #include "../project/SceneTemplates.h"
 #include "../physics/PhysicsSystem.h"
 #include "../core/Window.h"
@@ -656,7 +657,10 @@ namespace Hargon
 
             // 6. Locate runtime binary: prefer matching project binary (e.g. ElderSlipgateFPS.exe) or fallback to HargonRuntime.exe
             std::string exeName = config.executableName.empty() ? (config.projectName + ".exe") : config.executableName;
+            std::filesystem::path exeDir(ProjectManager::GetExecutableDirectoryPath());
             std::vector<std::filesystem::path> candidateBins = {
+                exeDir / exeName,
+                exeDir / "HargonRuntime.exe",
                 std::filesystem::path("build/Release") / exeName,
                 std::filesystem::path("build/Debug") / exeName,
                 std::filesystem::path("build") / exeName,
@@ -672,12 +676,20 @@ namespace Hargon
             std::filesystem::path destExe = outPath / exeName;
             for (const auto& cand : candidateBins)
             {
-                if (std::filesystem::exists(cand))
+                if (!cand.empty() && std::filesystem::exists(cand) && std::filesystem::is_regular_file(cand))
                 {
                     std::filesystem::copy_file(cand, destExe, std::filesystem::copy_options::overwrite_existing);
                     copiedBinary = true;
                     break;
                 }
+            }
+
+            if (!copiedBinary)
+            {
+                outStatusMessage = "Export failed: could not locate runtime executable ('" + exeName +
+                                   "' or 'HargonRuntime.exe'). Build the Release target before exporting standalone games.";
+                Log::Error(outStatusMessage);
+                return false;
             }
 
             // Write README_PLAY.txt
@@ -692,11 +704,7 @@ namespace Hargon
                 readme << "  Run " << exeName << "\n";
             }
 
-            if (copiedBinary)
-                outStatusMessage = "Exported standalone project '" + config.gameTitle + "' to '" + std::filesystem::absolute(outPath).string() + "' (" + exeName + ")!";
-            else
-                outStatusMessage = "Exported project '" + config.gameTitle + "' assets & project.hproject to '" + std::filesystem::absolute(outPath).string() + "'.";
-
+            outStatusMessage = "Exported standalone project '" + config.gameTitle + "' to '" + std::filesystem::absolute(outPath).string() + "' (" + exeName + ")!";
             Log::Editor(outStatusMessage);
             return true;
         }

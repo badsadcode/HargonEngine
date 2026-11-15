@@ -49,6 +49,7 @@ namespace Hargon
 
         virtual bool HandlesEditorAnimationPreview() const { return true; }
         virtual bool ShouldDrawEditorGrid() const { return true; }
+        virtual bool WantsCursorCapture() const { return false; }
         virtual bool HasPreferredEditorCameraPose(float& outYaw, float& outPitch) const { return false; }
         virtual EntityID PickDefaultSelectedEntity(const GameModuleContext& ctx, const CameraView& cam) const { return kInvalidEntity; }
     };

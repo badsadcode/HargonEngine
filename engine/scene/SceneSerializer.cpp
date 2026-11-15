@@ -193,6 +193,20 @@ namespace Hargon
             {"basePos",      Vec3ToJson(e.gameplay.basePos)}
         };
 
+        ej["components"] = {
+            {"mesh",       e.HasMesh()},
+            {"material",   e.HasMaterial()},
+            {"light",      e.HasLight()},
+            {"camera",     e.HasCamera()},
+            {"rigidBody",  e.HasRigidBody()},
+            {"collider",   e.HasCollider()},
+            {"raycast",    e.HasRayCast()},
+            {"audio",      e.HasAudio()},
+            {"luaScript",  e.HasLuaScript()},
+            {"particles",  e.HasParticles()},
+            {"animation",  e.HasAnimation()}
+        };
+
         return ej;
     }
 
@@ -380,6 +394,36 @@ namespace Hargon
             e.gameplay.extraKey = gj.value("extraKey", "");
             if (gj.contains("targetPos")) e.gameplay.targetPos = JsonToVec3(gj["targetPos"]);
             if (gj.contains("basePos"))   e.gameplay.basePos = JsonToVec3(gj["basePos"]);
+        }
+
+        if (ej.contains("components") && ej["components"].is_object())
+        {
+            const auto& cp = ej["components"];
+            e.hasMesh      = cp.value("mesh", e.mesh.enabled);
+            e.hasMaterial  = cp.value("material", e.hasMesh);
+            e.hasLight     = cp.value("light", e.light.enabled);
+            e.hasCamera    = cp.value("camera", e.camera.enabled);
+            e.hasRigidBody = cp.value("rigidBody", e.rigidBody.enabled);
+            e.hasCollider  = cp.value("collider", e.collider.enabled);
+            e.hasRayCast   = cp.value("raycast", e.raycast.enabled);
+            e.hasAudio     = cp.value("audio", e.audioSource.enabled);
+            e.hasLuaScript = cp.value("luaScript", e.luaScript.enabled || !e.luaScript.scriptPath.empty());
+            e.hasParticles = cp.value("particles", e.particleEmitter.enabled);
+            e.hasAnimation = cp.value("animation", e.animation.enabled);
+        }
+        else
+        {
+            e.hasMesh      = e.mesh.enabled;
+            e.hasMaterial  = e.mesh.enabled;
+            e.hasLight     = e.light.enabled;
+            e.hasCamera    = e.camera.enabled;
+            e.hasRigidBody = e.rigidBody.enabled;
+            e.hasCollider  = e.collider.enabled;
+            e.hasRayCast   = e.raycast.enabled;
+            e.hasAudio     = e.audioSource.enabled;
+            e.hasLuaScript = e.luaScript.enabled || !e.luaScript.scriptPath.empty();
+            e.hasParticles = e.particleEmitter.enabled;
+            e.hasAnimation = e.animation.enabled;
         }
     }
 

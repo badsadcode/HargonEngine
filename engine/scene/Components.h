@@ -323,10 +323,23 @@ namespace Hargon
         EntityID id = kInvalidEntity;
         bool alive = true;
 
-        // Godot Node3D parent-child scene graph hierarchy & process mode
+        // Node3D parent-child scene graph hierarchy & process mode
         EntityID parentId = kInvalidEntity;
         std::vector<EntityID> childrenIds;
         ProcessMode processMode = ProcessMode::Inherit;
+
+        // Explicit component presence flags for inspector UI (kept backward-compatible with legacy .hscene files)
+        bool hasMesh = true;
+        bool hasMaterial = true;
+        bool hasLight = false;
+        bool hasCamera = false;
+        bool hasRigidBody = false;
+        bool hasCollider = false;
+        bool hasRayCast = false;
+        bool hasAudio = false;
+        bool hasLuaScript = false;
+        bool hasParticles = false;
+        bool hasAnimation = false;
 
         TagComponent tag;
         TransformComponent transform;
@@ -342,5 +355,17 @@ namespace Hargon
         ParticleEmitterComponent particleEmitter;
         AnimationComponent animation;
         GameplayComponent gameplay;
+
+        bool HasMesh() const { return hasMesh || mesh.enabled; }
+        bool HasMaterial() const { return hasMaterial || HasMesh(); }
+        bool HasLight() const { return hasLight || light.enabled; }
+        bool HasCamera() const { return hasCamera || camera.enabled; }
+        bool HasRigidBody() const { return hasRigidBody || rigidBody.enabled; }
+        bool HasCollider() const { return hasCollider || collider.enabled; }
+        bool HasRayCast() const { return hasRayCast || raycast.enabled; }
+        bool HasAudio() const { return hasAudio || audioSource.enabled; }
+        bool HasLuaScript() const { return hasLuaScript || luaScript.enabled || !luaScript.scriptPath.empty(); }
+        bool HasParticles() const { return hasParticles || particleEmitter.enabled; }
+        bool HasAnimation() const { return hasAnimation || animation.enabled; }
     };
 }

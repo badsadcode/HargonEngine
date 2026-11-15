@@ -13,6 +13,11 @@ external/lua/
 external/miniaudio/
 external/nvrhi/
 
+# Editor workspace session state & local layout/recovery caches
+.hargon/
+projects/*/.hargon/
+imgui.ini
+
 # Temporary raw BMP captures (PNGs in docs/devlog/images are tracked)
 *.bmp
 *.obj.tmp

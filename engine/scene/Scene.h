@@ -27,12 +27,20 @@ namespace Hargon
         Entity* FindEntityByName(const std::string& name);
         std::vector<EntityID> FindEntitiesByTag(const std::string& tag) const;
 
-        // Godot-style Node3D Hierarchy (Parent / Children & Global Transform computation)
+        // Node3D Hierarchy (Parent / Children, Subtrees & Global Transform computation)
+        bool CanReparent(EntityID childId, EntityID newParentId) const;
         bool SetParent(EntityID childId, EntityID newParentId);
+        bool SetParentKeepWorld(EntityID childId, EntityID newParentId);
+        bool ReorderEntity(EntityID sourceId, EntityID targetId, bool insertAfter = false);
+        void CollectSubtree(EntityID rootId, std::vector<EntityID>& outIds) const;
+        void DestroySubtree(EntityID rootId);
+        EntityID DuplicateSubtree(EntityID sourceId, const glm::vec3& offset = glm::vec3(1.5f, 0.0f, 1.5f));
+        EntityID GroupEntities(const std::vector<EntityID>& entityIds, const std::string& groupName = "Group");
         glm::mat4 GetWorldMatrix(const Entity& e) const;
+        glm::mat3 GetWorldRotationBasis(const Entity& e) const;
         glm::vec3 GetWorldPosition(const Entity& e) const;
 
-        // Godot-style Node Groups & Signal Bus
+        // Node Groups & Signal Bus
         std::vector<EntityID> GetEntitiesInGroup(const std::string& group) const;
         void ConnectSignal(const std::string& signalName, SignalCallback cb);
         void EmitSignal(const std::string& signalName, EntityID emitterId = kInvalidEntity, const std::string& payload = "");
@@ -41,7 +49,10 @@ namespace Hargon
         std::vector<Entity>& GetEntities() { return m_Entities; }
         const std::vector<Entity>& GetEntities() const { return m_Entities; }
 
-        EntityID Raycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float* outDist = nullptr) const;
+        using BoundsLookupFn = std::function<bool(const MeshComponent&, glm::vec3& outMin, glm::vec3& outMax)>;
+        EntityID Raycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float* outDist = nullptr, const BoundsLookupFn& boundsLookup = {}) const;
+        bool RaycastSurface(const glm::vec3& rayOrigin, const glm::vec3& rayDir, EntityID ignoreEntity, float& outHitDist, glm::vec3& outHitPos, const BoundsLookupFn& boundsLookup = {}) const;
+        bool DropEntityToSurface(EntityID entityId, const BoundsLookupFn& boundsLookup = {});
         bool ShouldProcessEntity(const Entity& e, bool isPaused) const;
 
     public:

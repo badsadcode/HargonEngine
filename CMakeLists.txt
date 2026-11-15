@@ -126,6 +126,15 @@ target_link_libraries(ElderSlipgateFPS PRIVATE HargonEngine ElderSlipgateProject
 # 8. Hargon Visual Editor Executable (Zero direct project header dependencies; loads registered modules)
 add_executable(HargonEditor
     editor/EditorApp.cpp
+    editor/EditorWorkspace.cpp
+    editor/commands/EditorCommandSystem.cpp
+    editor/panels/HierarchyPanel.cpp
+    editor/panels/InspectorPanel.cpp
+    editor/panels/ViewportPanel.cpp
+    editor/panels/AssetBrowserPanel.cpp
+    editor/panels/ScriptEditorPanel.cpp
+    editor/panels/ConsolePanel.cpp
+    editor/panels/ProjectManagerWindow.cpp
     editor/main_editor.cpp
 )
 target_link_libraries(HargonEditor PRIVATE

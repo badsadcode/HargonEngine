@@ -30,6 +30,7 @@ namespace Hargon
         void PollEvents();
         bool ShouldClose() const;
         void RequestClose();
+        void ClearCloseRequest();
 
         GLFWwindow* GetNativeWindow() const { return m_Window; }
         void* GetWin32Handle() const;
@@ -38,6 +39,8 @@ namespace Hargon
         uint32_t GetHeight() const { return m_Height; }
         bool WasResized() const { return m_Resized; }
         void ClearResizedFlag() { m_Resized = false; }
+        bool IsFocused() const { return m_Focused; }
+        float GetContentScale() const;
 
         void SetTitle(const std::string& title);
 
@@ -65,12 +68,14 @@ namespace Hargon
         // Internal callback helpers
         void OnResize(int width, int height);
         void OnScroll(double xoffset, double yoffset);
+        void OnFocusChanged(bool focused);
 
     private:
         GLFWwindow* m_Window = nullptr;
         uint32_t m_Width = 1600;
         uint32_t m_Height = 900;
         bool m_Resized = false;
+        bool m_Focused = true;
         bool m_CursorCaptured = false;
 
         std::array<bool, 512> m_KeysCurrent{};

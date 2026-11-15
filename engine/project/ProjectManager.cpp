@@ -1,7 +1,9 @@
 #include "ProjectManager.h"
 #include "SceneTemplates.h"
 #include "../core/Log.h"
+#include <nlohmann/json.hpp>
 #include <filesystem>
+#include <fstream>
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -406,6 +408,167 @@ namespace Hargon
         return false;
     }
 
+    bool ProjectManager::BrowseSaveSceneFile(std::string& outFilePath, const std::string& initialDir)
+    {
+#ifdef _WIN32
+        char fileBuf[MAX_PATH * 2]{ "untitled_scene.hscene" };
+        OPENFILENAMEA ofn{};
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFilter = "Hargon Scene (*.hscene)\0*.hscene\0All Files (*.*)\0*.*\0";
+        ofn.lpstrFile = fileBuf;
+        ofn.nMaxFile = sizeof(fileBuf);
+        ofn.lpstrDefExt = "hscene";
+        std::string initNative;
+        if (!initialDir.empty())
+        {
+            initNative = std::filesystem::path(initialDir).make_preferred().string();
+            ofn.lpstrInitialDir = initNative.c_str();
+        }
+        ofn.lpstrTitle = "Save Hargon Scene As (.hscene)";
+        ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if (GetSaveFileNameA(&ofn))
+        {
+            outFilePath = std::filesystem::path(fileBuf).generic_string();
+            return true;
+        }
+#else
+        (void)outFilePath;
+        (void)initialDir;
+#endif
+        return false;
+    }
+
+    bool ProjectManager::BrowseForAssetFile(std::string& outFilePath)
+    {
+#ifdef _WIN32
+        char fileBuf[MAX_PATH * 2]{};
+        OPENFILENAMEA ofn{};
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFilter = "Hargon Assets (*.obj;*.lua;*.wav;*.hprefab;*.hscene;*.png;*.jpg;*.json)\0*.obj;*.lua;*.wav;*.hprefab;*.hscene;*.png;*.jpg;*.json\0All Files (*.*)\0*.*\0";
+        ofn.lpstrFile = fileBuf;
+        ofn.nMaxFile = sizeof(fileBuf);
+        ofn.lpstrTitle = "Import Asset Into Active Project";
+        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if (GetOpenFileNameA(&ofn))
+        {
+            outFilePath = std::filesystem::path(fileBuf).generic_string();
+            return true;
+        }
+#else
+        (void)outFilePath;
+#endif
+        return false;
+    }
+
+    std::string ProjectManager::GetExecutableDirectoryPath()
+    {
+        return GetExecutableDirectory(nullptr).generic_string();
+    }
+
+    void ProjectManager::EnsureProjectFolders(const GameProjectConfig& config)
+    {
+        if (config.projectRootDir.empty())
+            return;
+        std::error_code ec;
+        std::filesystem::path root(config.projectRootDir);
+        const char* folders[] = { "scenes", "scripts", "prefabs", "models", "materials", "textures", "sounds", "animations" };
+        for (const char* f : folders)
+            std::filesystem::create_directories(root / f, ec);
+    }
+
+    bool ProjectManager::ImportAssetIntoProject(
+        const GameProjectConfig& config,
+        const std::string& sourceFilePath,
+        const std::string& categorySubdir,
+        std::string* outProjectRelPath,
+        std::string* outError)
+    {
+        std::error_code ec;
+        std::filesystem::path src(sourceFilePath);
+        if (sourceFilePath.empty() || !std::filesystem::exists(src, ec) || !std::filesystem::is_regular_file(src, ec))
+        {
+            if (outError) *outError = "Source asset file not found: " + sourceFilePath;
+            return false;
+        }
+
+        std::string cat = categorySubdir;
+        if (cat.empty())
+        {
+            std::string ext = src.extension().string();
+            std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb") cat = "models";
+            else if (ext == ".lua") cat = "scripts";
+            else if (ext == ".wav" || ext == ".ogg" || ext == ".mp3") cat = "sounds";
+            else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") cat = "textures";
+            else if (ext == ".hprefab") cat = "prefabs";
+            else if (ext == ".hscene") cat = "scenes";
+            else if (ext == ".hmat") cat = "materials";
+            else cat = "models";
+        }
+
+        std::filesystem::path root = config.projectRootDir.empty() ? std::filesystem::path("assets") : std::filesystem::path(config.projectRootDir);
+        std::filesystem::path destDir = root / cat;
+        std::filesystem::create_directories(destDir, ec);
+        std::filesystem::path dest = destDir / src.filename();
+
+        auto srcCanon = std::filesystem::weakly_canonical(src, ec);
+        auto destCanon = std::filesystem::weakly_canonical(dest, ec);
+        if (srcCanon != destCanon)
+        {
+            if (!std::filesystem::copy_file(src, dest, std::filesystem::copy_options::overwrite_existing, ec) || ec)
+            {
+                if (outError) *outError = "Failed to copy asset: " + ec.message();
+                return false;
+            }
+        }
+
+        std::string relPath = (std::filesystem::path(cat) / src.filename()).generic_string();
+        if (outProjectRelPath)
+            *outProjectRelPath = config.projectRootDir.empty() ? dest.generic_string() : (root / relPath).generic_string();
+
+        // Update project asset manifest (.hassets.json) with stable asset ID & source record
+        try
+        {
+            std::filesystem::path manifestPath = root / ".hassets.json";
+            nlohmann::json manifest = nlohmann::json::object();
+            if (std::filesystem::exists(manifestPath, ec))
+            {
+                std::ifstream in(manifestPath);
+                if (in)
+                    manifest = nlohmann::json::parse(in, nullptr, false);
+                if (!manifest.is_object())
+                    manifest = nlohmann::json::object();
+            }
+            if (!manifest.contains("assets") || !manifest["assets"].is_object())
+                manifest["assets"] = nlohmann::json::object();
+
+            uint64_t hashVal = 14695981039346656037ull;
+            for (unsigned char ch : relPath)
+            {
+                hashVal ^= ch;
+                hashVal *= 1099511628211ull;
+            }
+            char idBuf[32];
+            std::snprintf(idBuf, sizeof(idBuf), "ast_%016llx", static_cast<unsigned long long>(hashVal));
+
+            manifest["assets"][relPath] = {
+                {"uid", idBuf},
+                {"category", cat},
+                {"source", src.generic_string()},
+                {"fileSize", static_cast<uint64_t>(std::filesystem::file_size(dest, ec))}
+            };
+            std::ofstream out(manifestPath, std::ios::out | std::ios::trunc);
+            if (out)
+                out << manifest.dump(2);
+        }
+        catch (...)
+        {
+        }
+
+        Log::Editor("Imported project asset '" + src.filename().string() + "' -> " + dest.generic_string());
+        return true;
+    }
+
     bool ProjectManager::CreateNewProject(
         const std::string& projectSlug,
         const std::string& gameTitle,
@@ -415,14 +578,35 @@ namespace Hargon
         GameProjectConfig& outConfig,
         std::string* outStatus)
     {
-        std::string safeSlug = projectSlug.empty() ? "MyNewGame" : projectSlug;
+        std::string safeSlug = TrimInput(projectSlug);
         for (char& c : safeSlug)
         {
-            if (c == ' ' || c == '/' || c == '\\' || c == ':')
+            if (c == ' ' || c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
                 c = '_';
+        }
+        while (!safeSlug.empty() && (safeSlug.front() == '.' || safeSlug.front() == '_'))
+            safeSlug.erase(safeSlug.begin());
+
+        if (safeSlug.empty() || safeSlug == "." || safeSlug == "..")
+        {
+            std::string err = "Project folder name cannot be empty or invalid.";
+            if (outStatus) *outStatus = err;
+            Log::Info("[ProjectManager] " + err);
+            return false;
         }
 
         std::filesystem::path dir = std::filesystem::path("projects") / safeSlug;
+        std::error_code ec;
+        if (std::filesystem::exists(dir / "project.hproject", ec) ||
+            (std::filesystem::exists(dir, ec) && std::filesystem::is_directory(dir, ec) && !std::filesystem::is_empty(dir, ec)))
+        {
+            std::string err = "Project '" + safeSlug + "' already exists at '" + dir.generic_string() +
+                              "'. Choose a different name to prevent overwriting existing files.";
+            if (outStatus) *outStatus = err;
+            Log::Info("[ProjectManager] " + err);
+            return false;
+        }
+
         std::filesystem::path scenesDir = dir / "scenes";
         std::filesystem::create_directories(scenesDir);
 
@@ -459,6 +643,8 @@ namespace Hargon
 
         std::filesystem::path projFile = dir / "project.hproject";
         bool ok = SceneSerializer::SaveProjectConfig(outConfig, projFile.string());
+        if (ok)
+            EnsureProjectFolders(outConfig);
         if (outStatus)
         {
             *outStatus = ok

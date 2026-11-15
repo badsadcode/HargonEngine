@@ -220,7 +220,11 @@ int main(int argc, char** argv)
 
         Hargon::GameModuleContext ctx{ &scene, &physics, &scripts, &audio, &renderer, &window, &projectCfg };
 
-        if (!inProjectLauncher)
+        if (inProjectLauncher)
+        {
+            window.SetCursorCaptured(false);
+        }
+        else
         {
             if (autoTest && activeModule)
             {
@@ -230,7 +234,10 @@ int main(int argc, char** argv)
             }
 
             if (activeModule)
+            {
                 activeModule->OnStepPlay(ctx, dt, gameCamera);
+                window.SetCursorCaptured(!autoTest && window.IsFocused() && activeModule->WantsCursorCapture());
+            }
         }
 
         gameCamera.aspectRatio = static_cast<float>(rhi.GetWidth()) / std::max(1.0f, static_cast<float>(rhi.GetHeight()));

@@ -812,6 +812,31 @@ namespace Hargon
         m_TransientLines.clear();
     }
 
+    bool Renderer3D::TryGetMeshLocalBounds(const MeshComponent& meshComp, glm::vec3& outMin, glm::vec3& outMax) const
+    {
+        if (meshComp.primitive == MeshPrimitive::CustomOBJ && !meshComp.customObjPath.empty())
+        {
+            auto it = m_CustomMeshes.find(meshComp.customObjPath);
+            if (it != m_CustomMeshes.end())
+            {
+                outMin = it->second.boundsMin;
+                outMax = it->second.boundsMax;
+                return true;
+            }
+            return false;
+        }
+
+        int key = static_cast<int>(meshComp.primitive);
+        auto it = m_PrimitiveMeshes.find(key);
+        if (it != m_PrimitiveMeshes.end())
+        {
+            outMin = it->second.boundsMin;
+            outMax = it->second.boundsMax;
+            return true;
+        }
+        return false;
+    }
+
     void Renderer3D::AddLine(std::vector<LineVertex>& lines, const glm::vec3& a, const glm::vec3& b, const glm::vec4& color)
     {
         if (lines.size() + 2 <= m_MaxLineVertices)
@@ -868,11 +893,15 @@ namespace Hargon
         }
     }
 
-    void Renderer3D::BuildGizmoLines(std::vector<LineVertex>& lines, const glm::vec3& center, float scale, GizmoMode mode, int hoveredAxis)
+    void Renderer3D::BuildGizmoLines(std::vector<LineVertex>& lines, const glm::vec3& center, float scale, GizmoMode mode, int hoveredAxis, const glm::mat3& basis)
     {
         glm::vec4 colX = (hoveredAxis == 0) ? glm::vec4(1.0f, 0.95f, 0.15f, 1.0f) : glm::vec4(1.0f, 0.22f, 0.22f, 1.0f);
         glm::vec4 colY = (hoveredAxis == 1) ? glm::vec4(1.0f, 0.95f, 0.15f, 1.0f) : glm::vec4(0.22f, 0.95f, 0.28f, 1.0f);
         glm::vec4 colZ = (hoveredAxis == 2) ? glm::vec4(1.0f, 0.95f, 0.15f, 1.0f) : glm::vec4(0.22f, 0.55f, 1.0f, 1.0f);
+
+        glm::vec3 ax = (glm::length(basis[0]) > 1e-5f) ? glm::normalize(basis[0]) : glm::vec3(1, 0, 0);
+        glm::vec3 ay = (glm::length(basis[1]) > 1e-5f) ? glm::normalize(basis[1]) : glm::vec3(0, 1, 0);
+        glm::vec3 az = (glm::length(basis[2]) > 1e-5f) ? glm::normalize(basis[2]) : glm::vec3(0, 0, 1);
 
         auto drawThickShaft = [&](const glm::vec3& axis, const glm::vec3& ortho1, const glm::vec3& ortho2, const glm::vec4& col)
         {
@@ -914,22 +943,22 @@ namespace Hargon
                 float a1 = (static_cast<float>(i + 1) / segs) * 2.0f * kPi;
                 // X rotation ring (YZ plane)
                 AddLine(lines,
-                    center + glm::vec3(0.0f, std::cos(a0) * r, std::sin(a0) * r),
-                    center + glm::vec3(0.0f, std::cos(a1) * r, std::sin(a1) * r), colX);
+                    center + (ay * std::cos(a0) + az * std::sin(a0)) * r,
+                    center + (ay * std::cos(a1) + az * std::sin(a1)) * r, colX);
                 // Y rotation ring (XZ plane)
                 AddLine(lines,
-                    center + glm::vec3(std::cos(a0) * r, 0.0f, std::sin(a0) * r),
-                    center + glm::vec3(std::cos(a1) * r, 0.0f, std::sin(a1) * r), colY);
+                    center + (ax * std::cos(a0) + az * std::sin(a0)) * r,
+                    center + (ax * std::cos(a1) + az * std::sin(a1)) * r, colY);
                 // Z rotation ring (XY plane)
                 AddLine(lines,
-                    center + glm::vec3(std::cos(a0) * r, std::sin(a0) * r, 0.0f),
-                    center + glm::vec3(std::cos(a1) * r, std::sin(a1) * r, 0.0f), colZ);
+                    center + (ax * std::cos(a0) + ay * std::sin(a0)) * r,
+                    center + (ax * std::cos(a1) + ay * std::sin(a1)) * r, colZ);
             }
         }
 
-        drawThickShaft(glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), colX);
-        drawThickShaft(glm::vec3(0, 1, 0), glm::vec3(1, 0, 0), glm::vec3(0, 0, 1), colY);
-        drawThickShaft(glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), colZ);
+        drawThickShaft(ax, ay, az, colX);
+        drawThickShaft(ay, ax, az, colY);
+        drawThickShaft(az, ax, ay, colZ);
     }
 
     int Renderer3D::RaycastGizmo(
@@ -937,7 +966,8 @@ namespace Hargon
         const CameraView& camera,
         const glm::vec3& rayOrigin,
         const glm::vec3& rayDir,
-        float* outAxisScale) const
+        float* outAxisScale,
+        const glm::mat3& gizmoBasis) const
     {
         float camDist = glm::length(camera.position - gizmoCenter);
         float gizmoScale = std::clamp(camDist * 0.16f, 1.2f, 6.0f);
@@ -945,9 +975,9 @@ namespace Hargon
             *outAxisScale = gizmoScale;
 
         glm::vec3 axes[3] = {
-            {1.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 1.0f}
+            (glm::length(gizmoBasis[0]) > 1e-5f) ? glm::normalize(gizmoBasis[0]) : glm::vec3(1.0f, 0.0f, 0.0f),
+            (glm::length(gizmoBasis[1]) > 1e-5f) ? glm::normalize(gizmoBasis[1]) : glm::vec3(0.0f, 1.0f, 0.0f),
+            (glm::length(gizmoBasis[2]) > 1e-5f) ? glm::normalize(gizmoBasis[2]) : glm::vec3(0.0f, 0.0f, 1.0f)
         };
 
         int bestAxis = -1;
@@ -1005,7 +1035,9 @@ namespace Hargon
         EntityID selectedEntity,
         GizmoMode gizmoMode,
         int hoveredGizmoAxis,
-        bool drawColliders)
+        bool drawColliders,
+        bool localGizmoSpace,
+        const std::vector<EntityID>* additionalSelected)
     {
         if (!targetFramebuffer)
             return;
@@ -1588,15 +1620,54 @@ namespace Hargon
             AddLine(worldLines, p.position - glm::vec3(0, 0, s), p.position + glm::vec3(0, 0, s), col);
         }
 
-        // Selection wireframe box
+        // Selection wireframe boxes (oriented to entity world matrix)
+        auto drawSelectionBox = [&](const Entity& ent, const glm::vec4& col)
+        {
+            glm::vec3 bmin(-0.35f), bmax(0.35f);
+            if (ent.mesh.enabled)
+            {
+                if (!TryGetMeshLocalBounds(ent.mesh, bmin, bmax))
+                {
+                    bmin = glm::vec3(-0.5f);
+                    bmax = glm::vec3(0.5f);
+                }
+            }
+            bmin -= glm::vec3(0.03f);
+            bmax += glm::vec3(0.03f);
+
+            glm::mat4 world = scene.GetWorldMatrix(ent);
+            glm::vec3 c[8] = {
+                glm::vec3(world * glm::vec4(bmin.x, bmin.y, bmin.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmax.x, bmin.y, bmin.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmax.x, bmax.y, bmin.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmin.x, bmax.y, bmin.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmin.x, bmin.y, bmax.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmax.x, bmin.y, bmax.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmax.x, bmax.y, bmax.z, 1.0f)),
+                glm::vec3(world * glm::vec4(bmin.x, bmax.y, bmax.z, 1.0f))
+            };
+            int edges[12][2] = {
+                {0,1},{1,2},{2,3},{3,0},
+                {4,5},{5,6},{6,7},{7,4},
+                {0,4},{1,5},{2,6},{3,7}
+            };
+            for (auto& edge : edges)
+                AddLine(worldLines, c[edge[0]], c[edge[1]], col);
+
+            if (ent.light.enabled && !ent.light.isDirectional)
+                AddWireSphere(worldLines, scene.GetWorldPosition(ent), ent.light.range, glm::vec4(ent.light.color, 0.7f));
+        };
+
         const Entity* sel = scene.GetEntity(selectedEntity);
         if (sel)
+            drawSelectionBox(*sel, glm::vec4(1.0f, 0.78f, 0.15f, 1.0f));
+        if (additionalSelected)
         {
-            glm::vec3 halfExt = glm::max(sel->transform.scale * 0.58f, glm::vec3(0.4f));
-            AddWireBox(worldLines, sel->transform.position, halfExt, glm::vec4(1.0f, 0.78f, 0.15f, 1.0f));
-            if (sel->light.enabled && !sel->light.isDirectional)
+            for (EntityID extraId : *additionalSelected)
             {
-                AddWireSphere(worldLines, sel->transform.position, sel->light.range, glm::vec4(sel->light.color, 0.7f));
+                if (extraId == selectedEntity) continue;
+                if (const Entity* extra = scene.GetEntity(extraId))
+                    drawSelectionBox(*extra, glm::vec4(0.35f, 0.85f, 1.0f, 0.9f));
             }
         }
 
@@ -1633,11 +1704,13 @@ namespace Hargon
         // 4. Render 3D Transform Gizmo on top of selected entity
         if (sel)
         {
+            glm::vec3 gizmoCenter = scene.GetWorldPosition(*sel);
+            glm::mat3 gizmoBasis = localGizmoSpace ? scene.GetWorldRotationBasis(*sel) : glm::mat3(1.0f);
             std::vector<LineVertex> gizmoLines;
             gizmoLines.reserve(512);
-            float camDist = glm::length(camera.position - sel->transform.position);
+            float camDist = glm::length(camera.position - gizmoCenter);
             float gizmoScale = std::clamp(camDist * 0.16f, 1.2f, 6.0f);
-            BuildGizmoLines(gizmoLines, sel->transform.position, gizmoScale, gizmoMode, hoveredGizmoAxis);
+            BuildGizmoLines(gizmoLines, gizmoCenter, gizmoScale, gizmoMode, hoveredGizmoAxis, gizmoBasis);
 
             if (!gizmoLines.empty())
             {
