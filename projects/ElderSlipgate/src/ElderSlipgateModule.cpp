@@ -171,10 +171,10 @@ namespace Hargon
             else if (frameCount >= 90 && frameCount <= 145)
             {
                 m_FPSGame.AimAtNearestVisibleEnemy();
-                if (frameCount == 115)
+                if (frameCount == 104)
                     m_FPSGame.SelectWeapon(4);
                 ctx.window->SetSimulatedKey(GLFW_KEY_F, true);
-                ctx.window->SetSimulatedKey(GLFW_KEY_W, (frameCount % 16) < 6);
+                ctx.window->SetSimulatedKey(GLFW_KEY_W, false);
             }
             else if (frameCount >= 152)
             {
@@ -183,9 +183,9 @@ namespace Hargon
 
             if (frameCount == 12)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_menu_settings.bmp");
-            else if (frameCount == 68)
+            else if (frameCount == 46)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign1_combat.bmp");
-            else if (frameCount == 138)
+            else if (frameCount == 124)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign2_combat.bmp");
         }
 

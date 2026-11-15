@@ -119,6 +119,8 @@ namespace Hargon
             m_Settings.brightness       = j.value("brightness", 1.05f);
             m_Settings.fogMultiplier    = j.value("fogMultiplier", 1.0f);
             m_Settings.dynamicLights    = j.value("dynamicLights", true);
+            m_Settings.shadowsEnabled   = j.value("shadowsEnabled", true);
+            m_Settings.ssaoEnabled      = j.value("ssaoEnabled", true);
             m_Settings.bloodGoreScale   = j.value("bloodGoreScale", 1.0f);
             m_Settings.fullscreen       = j.value("fullscreen", false);
             m_Settings.resolutionIndex  = j.value("resolutionIndex", 1);
@@ -140,6 +142,8 @@ namespace Hargon
             j["brightness"]       = m_Settings.brightness;
             j["fogMultiplier"]    = m_Settings.fogMultiplier;
             j["dynamicLights"]    = m_Settings.dynamicLights;
+            j["shadowsEnabled"]   = m_Settings.shadowsEnabled;
+            j["ssaoEnabled"]      = m_Settings.ssaoEnabled;
             j["bloodGoreScale"]   = m_Settings.bloodGoreScale;
             j["fullscreen"]       = m_Settings.fullscreen;
             j["resolutionIndex"]  = m_Settings.resolutionIndex;
@@ -166,7 +170,9 @@ namespace Hargon
         }
         if (m_Scene)
         {
-            m_Scene->ambientIntensity = 0.48f * m_Settings.brightness;
+            m_Scene->ambientIntensity = 0.15f * m_Settings.brightness;
+            m_Scene->worldEnv.shadowsEnabled = m_Settings.shadowsEnabled;
+            m_Scene->worldEnv.ssaoEnabled = m_Settings.ssaoEnabled;
         }
     }
 
@@ -227,6 +233,10 @@ namespace Hargon
         m_LevelSeed   = root.value("seed", 101);
 
         m_Scene->Clear();
+        m_ViewModelEntity = kInvalidEntity;
+        m_PlayerLightEntity = kInvalidEntity;
+        m_WeaponFireTimer = 0.0f;
+        m_MuzzleFlashTimer = 0.0f;
         m_Scene->sceneName = m_LevelCode + ": " + m_LevelTitle;
 
         // Configure Campaign & Style Atmosphere (Quake 1 Gothic vs Slipgate Base)
@@ -234,28 +244,34 @@ namespace Hargon
         {
             m_Scene->skyZenithColor     = glm::vec3(0.08f, 0.04f, 0.12f);
             m_Scene->skyHorizonColor    = glm::vec3(0.24f, 0.14f, 0.22f);
-            m_Scene->groundAmbientColor = glm::vec3(0.14f, 0.11f, 0.09f);
-            m_Scene->ambientIntensity   = 0.50f * m_Settings.brightness;
+            m_Scene->groundAmbientColor = glm::vec3(0.025f, 0.02f, 0.025f);
+            m_Scene->ambientIntensity   = 0.07f * m_Settings.brightness;
             m_Scene->fogDensity         = 0.014f * m_Settings.fogMultiplier;
         }
         else
         {
             m_Scene->skyZenithColor     = glm::vec3(0.04f, 0.09f, 0.14f);
             m_Scene->skyHorizonColor    = glm::vec3(0.16f, 0.25f, 0.30f);
-            m_Scene->groundAmbientColor = glm::vec3(0.10f, 0.13f, 0.15f);
-            m_Scene->ambientIntensity   = 0.52f * m_Settings.brightness;
+            m_Scene->groundAmbientColor = glm::vec3(0.025f, 0.035f, 0.045f);
+            m_Scene->ambientIntensity   = 0.08f * m_Settings.brightness;
             m_Scene->fogDensity         = 0.012f * m_Settings.fogMultiplier;
         }
+        m_Scene->worldEnv.shadowsEnabled = m_Settings.shadowsEnabled;
+        m_Scene->worldEnv.ssaoEnabled = m_Settings.ssaoEnabled;
+        m_Scene->worldEnv.ssaoRadius = 1.35f;
+        m_Scene->worldEnv.ssaoIntensity = 1.65f;
 
-        // Directional atmospheric key light
+        // Directional atmospheric key light (subdued indoors so torch & brazier OmniShadows carve deep contrast)
         {
             Entity& dirLight = m_Scene->CreateEntity("LevelSunLight", "Light");
             dirLight.mesh.enabled = false;
             dirLight.light.enabled = true;
             dirLight.light.isDirectional = true;
+            dirLight.light.castShadows = true;
             dirLight.transform.rotation = glm::vec3(50.0f, -35.0f, 0.0f);
             dirLight.light.color = (m_Campaign == 1) ? glm::vec3(1.0f, 0.85f, 0.68f) : glm::vec3(0.85f, 0.94f, 1.0f);
-            dirLight.light.intensity = 1.65f * m_Settings.brightness;
+            dirLight.light.intensity = 0.14f * m_Settings.brightness;
+            dirLight.light.shadowOpacity = 0.98f;
         }
 
         // 1. Parse BadLevel Column Spans & Diagonals for exact 3D collision & stair climbing
@@ -639,8 +655,23 @@ namespace Hargon
                 }
                 else if (kind == "light")
                 {
-                    // Spawn atmospheric point lights + ceiling/high-wall Torch / Tech Lamp fixtures
-                    if ((lightCounter % 2) == 0)
+                    // Spatial light deduplication (~1 per room/corridor) & ceiling drop-down so OmniShadows never wash out
+                    float lFl = pos.y - 2.5f, lCl = pos.y + 1.5f;
+                    if (QueryColumnFloorCeil(pos.x, pos.z, pos.y - 0.25f, lFl, lCl))
+                        pos.y = std::clamp(pos.y, lFl + 1.4f, lCl - 0.65f);
+
+                    bool tooClose = false;
+                    for (const auto& prev : m_Scene->GetEntities())
+                    {
+                        if (prev.light.enabled && !prev.light.isDirectional &&
+                            glm::length(prev.transform.position - pos) < 11.5f)
+                        {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if (!tooClose)
                     {
                         Entity& torch = m_Scene->CreateEntity("AtmosphericLight_" + std::to_string(lightCounter), "Light");
                         torch.transform.position = pos;
@@ -653,9 +684,12 @@ namespace Hargon
 
                         torch.light.enabled = m_Settings.dynamicLights;
                         torch.light.isDirectional = false;
+                        torch.light.castShadows = true;
                         torch.light.color = (m_Campaign == 1) ? glm::vec3(1.0f, 0.62f, 0.22f) : glm::vec3(0.55f, 0.85f, 1.0f);
-                        torch.light.intensity = 2.8f * m_Settings.brightness;
-                        torch.light.range = 14.5f;
+                        torch.light.intensity = 5.6f * m_Settings.brightness;
+                        torch.light.range = 20.0f;
+                        torch.light.shadowBias = 0.0010f;
+                        torch.light.shadowOpacity = 1.0f;
                     }
                     ++lightCounter;
                 }
@@ -719,19 +753,39 @@ namespace Hargon
                 if (cCl - cFl < 2.2f)
                     continue;
 
-                if ((k + rm.id) % 2 == 0)
+                if (k == (rm.id % 4))
                 {
-                    // Flickering Fire Brazier
+                    // Single key Fire Brazier per room (casts dramatic 360-degree pillar & doorway shadows!)
                     Entity& brazier = m_Scene->CreateEntity("Brazier_" + std::to_string(++propCounter), "Decoration");
-                    brazier.transform.position = glm::vec3(px, cFl + 0.45f, pz);
+                    brazier.transform.position = glm::vec3(px, cFl + 0.55f, pz);
                     brazier.transform.scale = glm::vec3(0.85f);
                     brazier.mesh.enabled = true;
+                    brazier.mesh.castShadows = false;
                     brazier.mesh.primitive = MeshPrimitive::PropBrazier;
                     brazier.material.albedoColor = glm::vec4(0.95f, 0.55f, 0.18f, 1.0f);
-                    brazier.material.emissiveColor = glm::vec3(1.0f, 0.50f, 0.12f);
+                    brazier.material.emissiveColor = (m_Campaign == 1) ? glm::vec3(1.0f, 0.50f, 0.12f) : glm::vec3(0.35f, 0.85f, 1.0f);
                     brazier.material.emissiveStrength = 2.5f;
+
+                    bool hasNearbyLight = false;
+                    for (const auto& prev : m_Scene->GetEntities())
+                    {
+                        if (prev.light.enabled && !prev.light.isDirectional &&
+                            glm::length(prev.transform.position - brazier.transform.position) < 9.0f)
+                        {
+                            hasNearbyLight = true;
+                            break;
+                        }
+                    }
+                    brazier.light.enabled = !hasNearbyLight && m_Settings.dynamicLights;
+                    brazier.light.isDirectional = false;
+                    brazier.light.castShadows = true;
+                    brazier.light.color = (m_Campaign == 1) ? glm::vec3(1.0f, 0.56f, 0.16f) : glm::vec3(0.45f, 0.85f, 1.0f);
+                    brazier.light.intensity = 5.8f * m_Settings.brightness;
+                    brazier.light.range = 20.0f;
+                    brazier.light.shadowBias = 0.0010f;
+                    brazier.light.shadowOpacity = 1.0f;
                 }
-                else
+                else if ((k + rm.id) % 2 == 1)
                 {
                     // Shootable Explosive Barrel!
                     Entity& barrel = m_Scene->CreateEntity("ExplosiveBarrel_" + std::to_string(++propCounter), "Barrel");
@@ -963,13 +1017,14 @@ namespace Hargon
         Entity* pl = m_Scene->GetEntity(m_PlayerLightEntity);
         if (!pl)
         {
-            Entity& l = m_Scene->CreateEntity("PlayerTorchLight", "MuzzleFlash");
+            Entity& l = m_Scene->CreateEntity("PlayerTorchLight", "Light");
             l.mesh.enabled = false;
-            l.light.enabled = true;
+            l.light.enabled = !m_Settings.shadowsEnabled && m_Settings.dynamicLights;
             l.light.isDirectional = false;
+            l.light.castShadows = false;
             l.light.color = glm::vec3(1.0f, 0.85f, 0.65f);
-            l.light.intensity = 1.6f;
-            l.light.range = 14.0f;
+            l.light.intensity = 0.12f;
+            l.light.range = 6.0f;
             m_PlayerLightEntity = l.id;
         }
     }
@@ -1631,8 +1686,8 @@ namespace Hargon
             rocket.material.emissiveStrength = 4.5f;
             rocket.light.enabled = true;
             rocket.light.color = glm::vec3(1.0f, 0.55f, 0.15f);
-            rocket.light.intensity = 4.5f;
-            rocket.light.range = 12.0f;
+            rocket.light.intensity = 1.6f;
+            rocket.light.range = 6.0f;
             rocket.rigidBody.enabled = true;
             rocket.rigidBody.velocity = aimDir * 24.0f;
             rocket.gameplay.enabled = true;
@@ -1741,15 +1796,15 @@ namespace Hargon
                 pl->light.color = (m_CurrentWeapon == FPSWeaponType::LightningGun)
                     ? glm::vec3(0.35f, 0.92f, 1.0f)
                     : glm::vec3(1.0f, 0.72f, 0.25f);
-                pl->light.intensity = 6.5f;
-                pl->light.range = 20.0f;
+                pl->light.intensity = 2.0f;
+                pl->light.range = 7.0f;
             }
             else
             {
-                pl->light.enabled = m_Settings.dynamicLights;
+                pl->light.enabled = !m_Settings.shadowsEnabled && m_Settings.dynamicLights;
                 pl->light.color = glm::vec3(1.0f, 0.85f, 0.68f);
-                pl->light.intensity = 1.6f * m_Settings.brightness;
-                pl->light.range = 14.0f;
+                pl->light.intensity = 0.14f * m_Settings.brightness;
+                pl->light.range = 6.0f;
             }
         }
     }
@@ -2854,6 +2909,8 @@ namespace Hargon
                 ImGui::SliderFloat("Atmospheric Fog Density", &m_Settings.fogMultiplier, 0.0f, 2.5f, "%.2f");
                 ImGui::SliderFloat("Quake Blood & Gore Intensity", &m_Settings.bloodGoreScale, 0.25f, 2.5f, "%.2fx");
                 ImGui::Checkbox("Dynamic Torch & Muzzle Point Lights", &m_Settings.dynamicLights);
+                ImGui::Checkbox("Real-Time Directional & Torch Shadows", &m_Settings.shadowsEnabled);
+                ImGui::Checkbox("Screen-Space Ambient Occlusion (SSAO)", &m_Settings.ssaoEnabled);
                 if (m_Scene)
                 {
                     const char* tmModes[] = { "Linear", "Reinhard", "Filmic (Hable)", "ACES Fitted", "AgX (Godot 4.3+)" };

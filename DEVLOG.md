@@ -156,13 +156,56 @@ Look closely at the screenshot from the **standalone exported `SkywayTrial.exe`*
 
 ---
 
+## Chapter 7: The Case of the 79 Lightbulbs and the Head-Mounted Scrag
+
+Every engine developer dreams of the day their boss looks at a screenshot and says, *"Hey, this game looks amazing!"*
+
+Instead, ours took one look at the freshly refactored engine and delivered four words that immediately sent everyone back to the drawing board:
+
+**"I still can't see the shadows."**
+
+In fairness to our shadow system, it *was* working... technically. You could sometimes spot a faint grey smudge underneath a turret if you tilted your monitor just right and turned off all the lights in your room. Out on sunny floating platforms in *Skyway Trial*, shadows were finally starting to behave. Inside *Elder Slipgate*'s gothic dungeons, however, the whole world looked like someone had installed fluorescent grocery-store strip lighting in a medieval crypt.
+
+### The Dungeon With 79 Overlapping Lightbulbs
+
+When we finally opened the hood on *Elder Slipgate*'s first dungeon map to ask why the stone pillars refused to cast shadows across the floor, the culprit confessed immediately: the level generator had lovingly decorated ten rooms with **seventy-nine overlapping light bulbs**. Four to six lights were piled inside single hallways, cancelling out every shadow any neighbor tried to draw. Worse, the player was carrying a shadow-proof headlamp attached directly to their own forehead — and mathematically speaking, a light nailed between your eyeballs shines straight along your gaze, hiding every single shadow directly *behind* the objects casting them! Oh, and flying rockets were basically unshadowed floating floodlights clearing out twelve meters of darkness everywhere they flew.
+
+So we went on a full lighting diet and rebuilt Hargon's shadow toolbox from scratch, taking another long walk through Godot's rendering closets along the way:
+- **Two-Stage Sunlight (PSSM)**: Instead of stretching one blanket shadow map over a huge outdoor horizon (making nearby shadows blurry) or hugging only the player's shoes (chopping off distant towers), outdoor sunlight now splits into two coordinated shadow zones — a super-sharp close-up zone right around the action, smoothly handing off to a wide far-field zone for distant pillars, windmills, and platforms.
+- **Eight Real 360-Degree Torches**: Dungeon torches, lava cores, and energy crystals now get proper six-sided shadow vision (`OmniPointShadowAtlas`), wrapping shadows around corners, arches, barrels, and hovering tanks from every direction at once — plus we caught a subtle perspective math quirk that had been quietly dissolving thin pillar shadows once they stood more than ten meters away from a torch!
+- **Soft Crevice Shading (SSAO)**: Wherever two walls meet a floor, under every crate, and tucked beneath stone archways, the renderer now adds subtle ambient contact darkening so bricks actually feel anchored into the earth rather than pasted onto it.
+- **Gravity Pads, Laser Sensors, and Smart Walkers**: While tinkering in Godot's backyard, we also added invisible `Area3D` zones that override local gravity or push you like a wind tunnel (announcing cleanly when someone steps in or out), `RayCast3D` laser-whisker sensors that report exact surface hits right in the Inspector, and a grid pathfinder so future AI characters can actually route around walls instead of walking wistfully into concrete.
+
+### Uncle Wispr Investigates Campaign 2
+
+> *"Why's that gargoyle wearing a tiny cyan flashlight inside his nose?"*
+> — Uncle Wispr, squinting into Campaign 2 right before we spotted the ID bug
+
+Which brings us to our favorite disaster of the entire week. While testing the shiny new torch shadows inside Campaign 2's industrial base, a gigantic pastel-pink slab suddenly appeared six inches in front of the player's nose and refused to leave. At first we blamed exploding meatballs. Then rockets. Then monsters charging too close.
+
+When we finally printed out what that mysterious pink wall actually was, it turned out to be... an **Acid Scrag Wizard** glued directly to a **floating Health Medkit** right between the player's eyes. Changing levels had cleared all the rooms and restarted entity ID numbering from 1 — while our gun viewmodel and player torch cheerfully kept using last level's ID numbers and accidentally possessed whatever poor monster happened to inherit seat #180 in the next factory. One reset on level transitions later, the Scrag went back to menacing corridors at a polite social distance, leaving behind crisp shadow pools across Campaign 2's grating floors.
+
+![Skyway Trial two-cascade directional shadows across elevated platforms and bumpers](docs/devlog/images/11_shadow_pssm_skyway.png)
+*No squinting required: crisp two-cascade sunlight shadows cutting across Skyway Trial's elevated track and floating bumpers.*
+
+![Starforge Outpost combining diagonal solar shadows and 360-degree core omni-shadows](docs/devlog/images/12_shadow_starforge_omni.png)
+*Starforge Outpost combining angled solar shadows from perimeter pylons with 360-degree radial shadows cast behind the rover by the glowing center core.*
+
+![Elder Slipgate gothic archway torch shadows and gibs](docs/devlog/images/13_shadow_elder_dungeon_torches.png)
+*Night-and-day difference: with the forehead floodlight tamed and linear torch bias fixed, razor-sharp archway shadows slice right across Elder Slipgate's cobblestone dungeon.*
+
+![Hargon Visual Studio Editor running Elder Slipgate with live torch shadows and SSAO](docs/devlog/images/14_editor_lighting_ssao.png)
+*Inside HargonEditor during live Play Mode: barrel shadows, pillar shadows, crevice SSAO, and zero uninvited monsters taped to the camera lens.*
+
+---
+
 ## Honest Confessions & What's Missing (So Far)
 
 A devlog that pretends everything is finished forever is lying to you, so here is where things genuinely stand today:
-- **History disclaimer**: Everything in this diary happened across real recorded commits, builds, screenshots, and logs — no bugs were embellished for dramatic flair (though the ceiling-mounted File menu really did require staring at a Vulkan coordinate helper for ten minutes in disbelief).
+- **History disclaimer**: Everything in this diary happened across real recorded commits, builds, screenshots, and logs — no bugs were embellished for dramatic flair (though the ceiling-mounted File menu really did require staring at a Vulkan coordinate helper for ten minutes in disbelief, and yes, an Acid Scrag genuinely spent an afternoon pretending to be our flashlight).
 - **Platform reality check**: While Hargon uses cross-platform libraries (`CMake`, `C++20`, `GLFW`, `NVRHI Vulkan`, `miniaudio`, `Lua`), only the **Windows (MSVC + Vulkan / D3D11, tested on RTX 3080)** build has actually been compiled, played, and visually verified in this repository so far. Linux and macOS remain untested on real hardware.
-- **Shadows & Models**: Our directional shadow pass currently renders one crisp 2048×2048 cascade tracking near the camera rather than multi-cascade sun shadows, and animated character rigs still rely on parametric/composite primitives and `.obj` meshes rather than full GLTF skeletal bone skinning.
-- **Editor conveniences**: You can create projects, edit hierarchies, inspect components, write/hot-reload Lua scripts, place prefabs, and export standalone executables — though a visual 3D asset drag-and-drop shelf and visual material graph are still wish-list items for future chapters.
+- **Models & Animations**: Real-time sunlight now uses 2-Cascade PSSM alongside 8 six-face 360-degree point-light shadow casters and screen-space ambient occlusion, though animated characters and monsters still rely on parametric/composite primitives and static `.obj` meshes rather than full GLTF skeletal bone skinning.
+- **Editor conveniences**: You can create projects, edit hierarchies, inspect components, tune shadow Cascades/SSAO/Area3D/RayCast3D sliders, write/hot-reload Lua scripts, place prefabs, and export standalone executables — though a visual 3D asset drag-and-drop shelf and visual material graph are still wish-list items for future chapters.
 
 ---
 

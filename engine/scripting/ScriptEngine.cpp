@@ -455,6 +455,60 @@ namespace Hargon
         return 6;
     }
 
+    static int Lua_RaycastNode(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        EntityID id = static_cast<EntityID>(luaL_checkinteger(L, 1));
+        if (se && se->GetScene())
+        {
+            PhysicsSystem::UpdateRayCastNodes(*se->GetScene());
+            if (const Entity* e = se->GetScene()->GetEntity(id))
+            {
+                lua_pushboolean(L, e->raycast.isColliding ? 1 : 0);
+                lua_pushinteger(L, e->raycast.hitEntity);
+                lua_pushnumber(L, e->raycast.hitDistance);
+                lua_pushnumber(L, e->raycast.hitPoint.x);
+                lua_pushnumber(L, e->raycast.hitPoint.y);
+                lua_pushnumber(L, e->raycast.hitPoint.z);
+                lua_pushnumber(L, e->raycast.hitNormal.x);
+                lua_pushnumber(L, e->raycast.hitNormal.y);
+                lua_pushnumber(L, e->raycast.hitNormal.z);
+                return 9;
+            }
+        }
+        lua_pushboolean(L, 0);
+        lua_pushinteger(L, kInvalidEntity);
+        for (int i = 0; i < 7; ++i) lua_pushnumber(L, 0.0);
+        return 9;
+    }
+
+    static int Lua_FindPath(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        float sx = static_cast<float>(luaL_checknumber(L, 1));
+        float sy = static_cast<float>(luaL_checknumber(L, 2));
+        float sz = static_cast<float>(luaL_checknumber(L, 3));
+        float gx = static_cast<float>(luaL_checknumber(L, 4));
+        float gy = static_cast<float>(luaL_checknumber(L, 5));
+        float gz = static_cast<float>(luaL_checknumber(L, 6));
+        float cellSize = static_cast<float>(luaL_optnumber(L, 7, 1.5));
+
+        lua_newtable(L);
+        if (se && se->GetScene())
+        {
+            auto pts = PhysicsSystem::FindPathGrid(*se->GetScene(), glm::vec3(sx, sy, sz), glm::vec3(gx, gy, gz), cellSize);
+            for (size_t i = 0; i < pts.size(); ++i)
+            {
+                lua_newtable(L);
+                lua_pushnumber(L, pts[i].x); lua_rawseti(L, -2, 1);
+                lua_pushnumber(L, pts[i].y); lua_rawseti(L, -2, 2);
+                lua_pushnumber(L, pts[i].z); lua_rawseti(L, -2, 3);
+                lua_rawseti(L, -2, static_cast<lua_Integer>(i + 1));
+            }
+        }
+        return 1;
+    }
+
     static int Lua_IsOnFloor(lua_State* L)
     {
         auto* se = GetScriptEngine(L);
@@ -590,6 +644,8 @@ namespace Hargon
         bind("is_action_pressed",   Lua_IsActionPressed);
         bind("get_group_count",     Lua_GetGroupCount);
         bind("raycast",             Lua_Raycast);
+        bind("raycast_node",        Lua_RaycastNode);
+        bind("find_path",           Lua_FindPath);
         bind("is_on_floor",         Lua_IsOnFloor);
         bind("create_timer",        Lua_CreateTimer);
         bind("is_timer_ready",      Lua_IsTimerReady);
@@ -762,6 +818,22 @@ namespace Hargon
         {
             if (eb->alive && eb->luaScript.enabled && !eb->luaScript.scriptPath.empty())
                 LoadAndCallEntityFunction(*eb, "on_collision", 0.0f, false, a);
+        }
+    }
+
+    void ScriptEngine::DispatchTrigger(Scene& scene, EntityID a, EntityID b, bool entered)
+    {
+        m_Scene = &scene;
+        const char* fn = entered ? "on_trigger_enter" : "on_trigger_exit";
+        if (Entity* ea = scene.GetEntity(a))
+        {
+            if (ea->alive && ea->luaScript.enabled && !ea->luaScript.scriptPath.empty())
+                LoadAndCallEntityFunction(*ea, fn, 0.0f, false, b);
+        }
+        if (Entity* eb = scene.GetEntity(b))
+        {
+            if (eb->alive && eb->luaScript.enabled && !eb->luaScript.scriptPath.empty())
+                LoadAndCallEntityFunction(*eb, fn, 0.0f, false, a);
         }
     }
 

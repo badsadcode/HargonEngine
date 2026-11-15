@@ -1,18 +1,21 @@
 cbuffer SceneCB : register(b0)
 {
     row_major float4x4 u_ViewProj;
-    row_major float4x4 u_LightViewProj;
-    float4 u_CameraPos;       // xyz = cam pos, w = time
-    float4 u_DirLightDir;     // xyz = dir toward light, w = intensity
-    float4 u_DirLightColor;   // xyz = color, w = ambientStrength
-    float4 u_SkyColor;        // xyz = sky horizon color, w = fogDensity
-    float4 u_GroundColor;     // xyz = ground color, w = pointLightCount
+    row_major float4x4 u_LightViewProj0;
+    row_major float4x4 u_LightViewProj1;
+    float4 u_CameraPos;                    // xyz = cam pos, w = time
+    float4 u_DirLightDir;                  // xyz = dir toward light, w = intensity
+    float4 u_DirLightColor;                // xyz = color, w = ambientStrength
+    float4 u_SkyColor;                     // xyz = sky horizon color, w = fogDensity
+    float4 u_GroundColor;                  // xyz = ground color, w = pointLightCount
     float4 u_PointLightPosRange[8];
     float4 u_PointLightColorIntensity[8];
-    float4 u_EnvParams0;      // x = tonemapMode, y = exposure, z = white, w = glowIntensity
-    float4 u_EnvParams1;      // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
-    float4 u_EnvParams2;      // x = brightness, y = saturation, z = glowBloom, w = shadowStrength
-    float4 u_ShadowParams;    // x = shadowBias, y = 1.0/shadowSize, z = shadowsEnabled, w = 0
+    float4 u_PointLightShadowInfo[8];      // x = shadowSlot (-1 none, 0..3), y = nearClip, z = shadowBias, w = shadowOpacity
+    float4 u_EnvParams0;                   // x = tonemapMode, y = exposure, z = white, w = glowIntensity
+    float4 u_EnvParams1;                   // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
+    float4 u_EnvParams2;                   // x = brightness, y = saturation, z = glowBloom, w = dirShadowOpacity
+    float4 u_ShadowParams;                 // x = dirShadowBias, y = dirNormalBias, z = dirShadowBlur, w = shadowsEnabled
+    float4 u_SSAOParams;                   // x = ssaoEnabled, y = ssaoDirectAffect, z = invScreenW, w = invScreenH
 };
 
 cbuffer ObjectCB : register(b1)
@@ -25,7 +28,9 @@ cbuffer ObjectCB : register(b1)
 };
 
 Texture2D g_AlbedoTex : register(t0);
-Texture2D<float> g_ShadowMap : register(t1);
+Texture2D<float> g_ShadowMap : register(t1);        // 2048x1024 PSSM: [0..0.5] Cascade 0 Near, [0.5..1.0] Cascade 1 Far
+Texture2D<float> g_OmniShadowAtlas : register(t2);  // 3072x1024 Omni: 8 slots (4x2), each 3x2 faces (256x256)
+Texture2D<float4> g_SSAOTex : register(t3);         // Half-res bilateral blurred SSAO
 SamplerState g_Sampler : register(s0);
 SamplerState g_ShadowSampler : register(s1);
 
@@ -60,6 +65,28 @@ PSInput VSMain(VSInput input)
 
 static const float PI = 3.14159265359f;
 
+// Godot Interleaved Gradient Noise (scene_forward_lights_inc.glsl)
+float QuickHash(float2 pos)
+{
+    return frac(52.9829189f * frac(dot(pos, float2(0.06711056f, 0.00583715f))));
+}
+
+// 12-sample Vogel disk for smooth Godot-inspired soft shadows
+static const float2 kPoissonDisk12[12] = {
+    float2(-0.326212f, -0.405805f),
+    float2(-0.840144f, -0.073580f),
+    float2(-0.695914f,  0.457137f),
+    float2(-0.203345f,  0.620716f),
+    float2( 0.962340f, -0.194983f),
+    float2( 0.473434f, -0.480026f),
+    float2( 0.519456f,  0.767022f),
+    float2( 0.185461f, -0.893124f),
+    float2( 0.507431f,  0.064425f),
+    float2( 0.896420f,  0.412458f),
+    float2(-0.321940f, -0.932615f),
+    float2(-0.791559f, -0.597705f)
+};
+
 float DistributionGGX(float3 N, float3 H, float roughness)
 {
     float a = roughness * roughness;
@@ -87,7 +114,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 
 float3 FresnelSchlick(float cosTheta, float3 F0)
 {
-    return F0 + (1.0f - F0) * pow( saturate(1.0f - cosTheta), 5.0f );
+    return F0 + (1.0f - F0) * pow(saturate(1.0f - cosTheta), 5.0f);
 }
 
 float3 EvaluateLight(float3 N, float3 V, float3 L, float3 radiance, float3 albedo, float metallic, float roughness, float3 F0)
@@ -107,40 +134,143 @@ float3 EvaluateLight(float3 N, float3 V, float3 L, float3 radiance, float3 albed
     return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
-float ComputeDirectionalShadow(float3 worldPos, float3 N, float3 Ldir)
+// Godot-inspired BIAS_FUNC + Rotated 12-tap Disk PCF on 2048x1024 PSSM cascade tile
+float SampleCascadePCF(float3 biasedWorldPos, float4x4 lightVP, float uOffset, float biasScale, float filterRadius, float2 rotSC, out float outMinEdge)
 {
-    if (u_ShadowParams.z < 0.5f)
-        return 1.0f;
-
-    float4 sc = mul(float4(worldPos, 1.0f), u_LightViewProj);
+    float4 sc = mul(float4(biasedWorldPos, 1.0f), lightVP);
     float3 proj = sc.xyz / max(sc.w, 0.0001f);
-    float2 uv = float2(proj.x * 0.5f + 0.5f, -proj.y * 0.5f + 0.5f);
+    float2 tileUV = float2(proj.x * 0.5f + 0.5f, -proj.y * 0.5f + 0.5f);
 
-    if (uv.x <= 0.001f || uv.x >= 0.999f || uv.y <= 0.001f || uv.y >= 0.999f || proj.z <= 0.001f || proj.z >= 0.999f)
+    if (tileUV.x <= 0.002f || tileUV.x >= 0.998f || tileUV.y <= 0.002f || tileUV.y >= 0.998f || proj.z <= 0.001f || proj.z >= 0.999f)
+    {
+        outMinEdge = 0.0f;
         return 1.0f;
+    }
 
-    float2 edgeDist = min(uv, 1.0f - uv);
-    float edgeFade = smoothstep(0.0f, 0.08f, min(edgeDist.x, edgeDist.y));
+    float2 edgeDist = min(tileUV, 1.0f - tileUV);
+    outMinEdge = min(edgeDist.x, edgeDist.y);
 
-    float cosTheta = saturate(dot(N, Ldir));
-    float bias = clamp(u_ShadowParams.x * (1.25f - 0.8f * cosTheta), 0.0005f, 0.015f);
-    float currentDepth = proj.z - bias;
-    float texel = max(u_ShadowParams.y, 1.0f / 2048.0f);
+    float currentDepth = proj.z - u_ShadowParams.x * biasScale;
+    float2 texelAtlas = float2(1.0f / 2048.0f, 1.0f / 1024.0f);
+    float2 tileMin = float2(uOffset + texelAtlas.x, texelAtlas.y);
+    float2 tileMax = float2(uOffset + 0.5f - texelAtlas.x, 1.0f - texelAtlas.y);
 
-    // 3x3 PCF filter inspired by Godot DirectionalLight3D soft shadows
     float sum = 0.0f;
     [unroll]
-    for (int y = -1; y <= 1; ++y)
+    for (int i = 0; i < 12; ++i)
     {
-        [unroll]
-        for (int x = -1; x <= 1; ++x)
-        {
-            float sampled = g_ShadowMap.SampleLevel(g_ShadowSampler, uv + float2(x, y) * texel * 1.35f, 0).r;
-            sum += (currentDepth <= sampled) ? 1.0f : 0.0f;
-        }
+        float2 d = kPoissonDisk12[i];
+        float2 r = float2(d.x * rotSC.x - d.y * rotSC.y, d.x * rotSC.y + d.y * rotSC.x);
+        float2 suv = clamp(float2(uOffset + tileUV.x * 0.5f, tileUV.y) + r * texelAtlas * filterRadius, tileMin, tileMax);
+        float sampled = g_ShadowMap.SampleLevel(g_ShadowSampler, suv, 0).r;
+        sum += (currentDepth <= sampled) ? 1.0f : 0.0f;
     }
-    float pcf = sum / 9.0f;
-    return lerp(1.0f, pcf, edgeFade * saturate(u_EnvParams2.w));
+    return sum / 12.0f;
+}
+
+float ComputeDirectionalShadow(float3 worldPos, float3 N, float3 Ldir, float2 screenPixel)
+{
+    if (u_ShadowParams.w < 0.5f)
+        return 1.0f;
+
+    // Godot-inspired normal + light slope offset bias (zero acne on grazing roofs/slopes, crisp contact)
+    float NdotL = saturate(dot(N, Ldir));
+    float3 normalOffset = N * (u_ShadowParams.y * (1.0f - NdotL));
+    float3 biasedPos = worldPos + normalOffset;
+
+    float angle = QuickHash(screenPixel) * 6.2831853f;
+    float2 rotSC = float2(cos(angle), sin(angle));
+    float blurScale = max(u_ShadowParams.z, 0.5f);
+
+    float edge0 = 0.0f;
+    float shadow0 = SampleCascadePCF(biasedPos, u_LightViewProj0, 0.0f, 1.0f, 1.55f * blurScale, rotSC, edge0);
+
+    float pcf = shadow0;
+    // Blend near Cascade 0 smoothly into wide Cascade 1 across outer 14% of near cascade
+    if (edge0 < 0.14f)
+    {
+        float edge1 = 0.0f;
+        float shadow1 = SampleCascadePCF(biasedPos + normalOffset * 1.15f, u_LightViewProj1, 0.5f, 1.45f, 1.40f * blurScale, rotSC, edge1);
+        float blend = smoothstep(0.0f, 0.14f, edge0);
+        float farFade = smoothstep(0.0f, 0.08f, edge1);
+        float outerShadow = lerp(1.0f, shadow1, farFade);
+        pcf = (edge0 <= 0.002f) ? outerShadow : lerp(outerShadow, shadow0, blend);
+    }
+
+    return lerp(1.0f, pcf, saturate(u_EnvParams2.w));
+}
+
+// Godot-inspired OmniLight 360-degree 6-Face Shadow Atlas sampling
+float ComputePointLightShadow(int slot, float nearClip, float range, float bias, float opacity, float3 worldPos, float3 lightPos, float3 N, float3 Ldir, float2 screenPixel)
+{
+    if (slot < 0 || opacity <= 0.001f || u_ShadowParams.w < 0.5f)
+        return 1.0f;
+
+    float NdotL = saturate(dot(N, Ldir));
+    float3 shadowPos = worldPos + N * (0.045f * (1.0f - NdotL)) + Ldir * 0.025f;
+    float3 V = shadowPos - lightPos;
+    float3 av = abs(V);
+
+    int face = 0;
+    float vx = 0.0f, vy = 0.0f, vz = 0.0f;
+    if (av.x >= av.y && av.x >= av.z)
+    {
+        if (V.x >= 0.0f) { face = 0; vx = -V.z; vy = V.y; vz =  V.x; }
+        else             { face = 1; vx =  V.z; vy = V.y; vz = -V.x; }
+    }
+    else if (av.y >= av.x && av.y >= av.z)
+    {
+        if (V.y >= 0.0f) { face = 2; vx =  V.x; vy = -V.z; vz =  V.y; }
+        else             { face = 3; vx =  V.x; vy =  V.z; vz = -V.y; }
+    }
+    else
+    {
+        if (V.z >= 0.0f) { face = 4; vx =  V.x; vy = V.y; vz =  V.z; }
+        else             { face = 5; vx = -V.x; vy = V.y; vz = -V.z; }
+    }
+
+    if (vz <= nearClip + 0.01f)
+        return 1.0f;
+
+    float2 ndc = float2(vx, vy) / vz;
+    float2 faceUV = clamp(float2(ndc.x * 0.5f + 0.5f, -ndc.y * 0.5f + 0.5f), 0.006f, 0.994f);
+
+    float slotX = (float)(slot & 3);
+    float slotY = (float)(slot >> 2);
+    float col = (float)(face % 3);
+    float row = (float)(face / 3);
+
+    float2 tileOrigin = float2(slotX * 0.25f + col / 12.0f, slotY * 0.5f + row / 4.0f);
+    float2 tileSize   = float2(1.0f / 12.0f, 1.0f / 4.0f);
+    float2 atlasTexel = float2(1.0f / 3072.0f, 1.0f / 1024.0f);
+    float2 tileMin = tileOrigin + atlasTexel;
+    float2 tileMax = tileOrigin + tileSize - atlasTexel;
+    float2 baseUV = tileOrigin + faceUV * tileSize;
+
+    // Linear world-meter bias converted back to perspectiveLH_ZO NDC depth (avoids d^2 bias blow-up)
+    float metricBias = max(bias * 35.0f, 0.038f) + 0.0055f * vz;
+    float biasedVz = max(vz - metricBias, nearClip + 0.01f);
+    float currentDepth = (range * (biasedVz - nearClip)) / (biasedVz * max(range - nearClip, 0.01f));
+
+    float angle = QuickHash(screenPixel) * 6.2831853f;
+    float2 sc = float2(cos(angle), sin(angle)) * 1.45f;
+    float2 offsets[4] = {
+        float2( sc.x,  sc.y),
+        float2(-sc.y,  sc.x),
+        float2(-sc.x, -sc.y),
+        float2( sc.y, -sc.x)
+    };
+
+    float sum = 0.0f;
+    [unroll]
+    for (int t = 0; t < 4; ++t)
+    {
+        float2 suv = clamp(baseUV + offsets[t] * atlasTexel, tileMin, tileMax);
+        float d = g_OmniShadowAtlas.SampleLevel(g_ShadowSampler, suv, 0).r;
+        sum += (currentDepth <= d) ? 1.0f : 0.0f;
+    }
+
+    return lerp(1.0f, sum * 0.25f, saturate(opacity));
 }
 
 float4 PSMain(PSInput input) : SV_Target
@@ -153,11 +283,9 @@ float4 PSMain(PSInput input) : SV_Target
 
     int pattern = (int)(u_MaterialParams.w + 0.5f);
     float3 wp = input.worldPos;
-    // Triplanar world-space UV for crisp Quake-style brush & prop texturing
     float2 triUV = (abs(N.y) > 0.6f) ? wp.xz : ((abs(N.x) > 0.6f) ? wp.zy : wp.xy);
     triUV *= max(u_MaterialParams.z, 0.01f);
 
-    // Simple procedural hash for weathered Quake grit & mortar
     float2 cellId = floor(triUV * 8.0f);
     float grit = frac(sin(dot(cellId, float2(12.9898f, 78.233f))) * 43758.5453f);
     float fineGrit = frac(sin(dot(floor(triUV * 32.0f), float2(39.346f, 11.135f))) * 24634.6345f);
@@ -192,7 +320,7 @@ float4 PSMain(PSInput input) : SV_Target
     else if (pattern == 4) // Energy Crystal / Runic Shimmer
     {
         float pulse = 0.85f + 0.25f * sin(u_CameraPos.w * 4.0f + input.worldPos.y * 3.0f);
-        float rim = pow(1.0f - max(dot(N, V), 0.0f), 2.2f);
+        float rim = pow(saturate(1.0f - max(dot(N, V), 0.0f)), 2.2f);
         baseColor = baseColor * pulse + rim * float3(0.4f, 0.9f, 1.0f);
     }
     else if (pattern == 5) // Quake 1 Weathered Gothic Stone Bricks (Walls)
@@ -206,7 +334,6 @@ float4 PSMain(PSInput input) : SV_Target
         float mortar = step(0.06f, bFrac.x) * step(bFrac.x, 0.94f) * step(0.09f, bFrac.y) * step(bFrac.y, 0.91f);
         float bevel = smoothstep(0.0f, 0.16f, min(min(bFrac.x, 1.0f - bFrac.x), min(bFrac.y, 1.0f - bFrac.y)));
         float3 stoneTint = baseColor * lerp(0.76f, 1.18f, brickHash) * lerp(0.86f, 1.08f, fineGrit);
-        // Subtle moss/soot banding along vertical height
         float grime = 0.80f + 0.20f * sin(wp.y * 1.4f + grit * 2.5f);
         baseColor = lerp(baseColor * 0.28f, stoneTint * bevel * grime, mortar);
     }
@@ -221,7 +348,7 @@ float4 PSMain(PSInput input) : SV_Target
         float3 tileCol = baseColor * lerp(0.80f, 1.16f, tileHash) * lerp(0.88f, 1.08f, fineGrit) * innerBorder;
         baseColor = lerp(baseColor * 0.30f, tileCol, seam);
     }
-    else if (pattern == 7) // Quake 1 Vaulted Coffered Ceiling / Ribbed Timber-Stone
+    else if (pattern == 7) // Quake 1 Vaulted Coffered Ceiling
     {
         float2 cofUV = triUV * 1.5f;
         float2 cFrac = frac(cofUV);
@@ -231,17 +358,15 @@ float4 PSMain(PSInput input) : SV_Target
         baseColor = baseColor * lerp(1.12f, 0.62f, sunken) * lerp(0.88f, 1.06f, fineGrit);
         baseColor = lerp(baseColor, baseColor * 1.25f, rib * 0.5f);
     }
-    else if (pattern == 8) // Quake 1 Riveted Rusted Iron & Base Panels (Industrial/Bunker Walls)
+    else if (pattern == 8) // Quake 1 Riveted Rusted Iron & Base Panels
     {
         float2 pUV = triUV * float2(1.2f, 1.2f);
         float2 pFrac = frac(pUV);
         float2 pId = floor(pUV);
         float panelVar = frac(sin(dot(pId, float2(93.1f, 157.3f))) * 43758.5453f);
         float seam = step(0.04f, pFrac.x) * step(pFrac.x, 0.96f) * step(0.04f, pFrac.y) * step(pFrac.y, 0.96f);
-        // Corner rivets
         float2 cornerDist = abs(pFrac - 0.5f);
         float rivet = step(0.39f, cornerDist.x) * step(0.39f, cornerDist.y) * step(cornerDist.x, 0.44f) * step(cornerDist.y, 0.44f);
-        // Rust & hazard stripe accent
         float rust = smoothstep(0.55f, 0.95f, grit) * 0.35f;
         float3 metalCol = lerp(baseColor * lerp(0.82f, 1.15f, panelVar), float3(0.48f, 0.24f, 0.12f), rust);
         metalCol *= lerp(0.90f, 1.08f, fineGrit);
@@ -307,13 +432,22 @@ float4 PSMain(PSInput input) : SV_Target
     float3 F0 = float3(0.04f, 0.04f, 0.04f);
     F0 = lerp(F0, baseColor, metallic);
 
-    // Directional Sun Light with 3x3 PCF Real-Time Shadowing
+    // Sample Screen-Space Ambient Occlusion (SSAO)
+    float ssao = 1.0f;
+    if (u_SSAOParams.x > 0.5f)
+    {
+        float2 screenUV = saturate(input.position.xy * u_SSAOParams.zw);
+        ssao = g_SSAOTex.SampleLevel(g_Sampler, screenUV, 0).r;
+    }
+    float directAO = lerp(1.0f, ssao, saturate(u_SSAOParams.y));
+
+    // Directional Sun Light with 2-Cascade PSSM Rotated Poisson PCF
     float3 Ldir = normalize(u_DirLightDir.xyz);
     float3 dirRadiance = u_DirLightColor.rgb * u_DirLightDir.w;
-    float shadowFactor = ComputeDirectionalShadow(input.worldPos, N, Ldir);
-    float3 Lo = EvaluateLight(N, V, Ldir, dirRadiance, baseColor, metallic, roughness, F0) * shadowFactor;
+    float shadowFactor = ComputeDirectionalShadow(input.worldPos, N, Ldir, input.position.xy);
+    float3 Lo = EvaluateLight(N, V, Ldir, dirRadiance, baseColor, metallic, roughness, F0) * shadowFactor * directAO;
 
-    // Dynamic Point Lights
+    // Dynamic Point Lights (including 360-degree 6-Face Shadow Atlas for shadow-casting OmniLights)
     int pointCount = min((int)(u_GroundColor.w + 0.5f), 8);
     for (int i = 0; i < pointCount; ++i)
     {
@@ -326,19 +460,26 @@ float4 PSMain(PSInput input) : SV_Target
             float3 L = toLight / max(dist, 0.0001f);
             float atten = saturate(1.0f - (dist / lightRange));
             atten = atten * atten;
-            float3 radiance = u_PointLightColorIntensity[i].rgb * u_PointLightColorIntensity[i].w * atten;
+
+            float4 shInfo = u_PointLightShadowInfo[i];
+            int shadowSlot = (int)round(shInfo.x);
+            float pointShadow = ComputePointLightShadow(
+                shadowSlot, max(shInfo.y, 0.15f), lightRange, shInfo.z, shInfo.w,
+                input.worldPos, lightPos, N, L, input.position.xy);
+
+            float3 radiance = u_PointLightColorIntensity[i].rgb * u_PointLightColorIntensity[i].w * atten * pointShadow * directAO;
             Lo += EvaluateLight(N, V, L, radiance, baseColor, metallic, roughness, F0);
         }
     }
 
-    // Hemisphere Ambient Lighting (with subtle shadow occlusion for grounded contact contrast)
+    // Hemisphere Ambient Lighting modulated cleanly by directional occlusion & SSAO
     float hemi = N.y * 0.5f + 0.5f;
     float3 ambientIrradiance = lerp(u_GroundColor.rgb, u_SkyColor.rgb, hemi) * u_DirLightColor.w;
-    float3 ambient = ambientIrradiance * baseColor * lerp(0.82f, 1.0f, shadowFactor);
+    float3 ambient = ambientIrradiance * baseColor * lerp(0.54f, 1.0f, shadowFactor) * ssao;
 
-    // Subtle Fresnel rim for 3D readability
-    float rimTerm = pow(1.0f - max(dot(N, V), 0.0f), 3.5f);
-    ambient += rimTerm * u_SkyColor.rgb * 0.18f * (1.0f - roughness * 0.5f);
+    // Subtle Fresnel rim for silhouette readability
+    float rimTerm = pow(saturate(1.0f - max(dot(N, V), 0.0f)), 3.5f);
+    ambient += rimTerm * u_SkyColor.rgb * 0.14f * (1.0f - roughness * 0.5f) * ssao;
 
     // Emissive + Godot Glow / Bloom Boost
     float glowBoost = 1.0f + u_EnvParams0.w + u_EnvParams2.z * 2.0f;
@@ -370,12 +511,12 @@ float4 PSMain(PSInput input) : SV_Target
     {
         mapped = saturate(x);
     }
-    else if (tmMode == 1) // Reinhard (with white point)
+    else if (tmMode == 1) // Reinhard
     {
         float w2 = max(u_EnvParams0.z * u_EnvParams0.z, 0.1f);
         mapped = (x * (1.0f + x / w2)) / (1.0f + x);
     }
-    else if (tmMode == 2) // Filmic (Hable / Uncharted 2)
+    else if (tmMode == 2) // Filmic
     {
         float3 A = 0.15f, B = 0.50f, C = 0.10f, D = 0.20f, E = 0.02f, F = 0.30f;
         mapped = ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
@@ -386,7 +527,7 @@ float4 PSMain(PSInput input) : SV_Target
     {
         mapped = saturate((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f));
     }
-    else // 4 = AgX (Godot / Blender AgX Filmic with highlight chroma preservation)
+    else // 4 = AgX
     {
         float3 agx = x / (x + 0.52f);
         float luma = dot(agx, float3(0.2126f, 0.7152f, 0.0722f));
@@ -397,7 +538,7 @@ float4 PSMain(PSInput input) : SV_Target
     // Gamma Correction
     mapped = pow(max(mapped, 0.0f), 1.0f / 2.2f);
 
-    // Godot Environment Color Adjustments (Brightness, Contrast, Saturation)
+    // Godot Environment Color Adjustments
     float brightness = u_EnvParams2.x;
     float contrast   = u_EnvParams1.w;
     float saturation = u_EnvParams2.y;

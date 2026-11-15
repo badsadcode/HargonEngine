@@ -135,9 +135,9 @@ int main(int argc, char** argv)
             else if (frameCount >= 90 && frameCount <= 145)
             {
                 fps.AimAtNearestVisibleEnemy();
-                if (frameCount == 115) fps.SelectWeapon(4);
+                if (frameCount == 104) fps.SelectWeapon(4);
                 window.SetSimulatedKey(GLFW_KEY_F, true);
-                window.SetSimulatedKey(GLFW_KEY_W, (frameCount % 16) < 6);
+                window.SetSimulatedKey(GLFW_KEY_W, false);
             }
             else if (frameCount >= 152)
             {
@@ -166,9 +166,9 @@ int main(int argc, char** argv)
         {
             if (frameCount == 12)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_menu_settings.bmp");
-            else if (frameCount == 68)
+            else if (frameCount == 46)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign1_combat.bmp");
-            else if (frameCount == 138)
+            else if (frameCount == 124)
                 rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign2_combat.bmp");
         }
     }

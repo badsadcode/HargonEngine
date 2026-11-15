@@ -51,6 +51,7 @@ namespace Hargon
 
         ej["mesh"] = {
             {"enabled",       e.mesh.enabled},
+            {"castShadows",   e.mesh.castShadows},
             {"primitive",     MeshFactory::PrimitiveToString(e.mesh.primitive)},
             {"customObjPath", e.mesh.customObjPath}
         };
@@ -66,13 +67,17 @@ namespace Hargon
         };
 
         ej["light"] = {
-            {"enabled",       e.light.enabled},
-            {"isDirectional", e.light.isDirectional},
-            {"castShadows",   e.light.castShadows},
-            {"color",         Vec3ToJson(e.light.color)},
-            {"intensity",     e.light.intensity},
-            {"range",         e.light.range},
-            {"shadowBias",    e.light.shadowBias}
+            {"enabled",           e.light.enabled},
+            {"isDirectional",     e.light.isDirectional},
+            {"castShadows",       e.light.castShadows},
+            {"color",             Vec3ToJson(e.light.color)},
+            {"intensity",         e.light.intensity},
+            {"range",             e.light.range},
+            {"shadowBias",        e.light.shadowBias},
+            {"shadowOpacity",     e.light.shadowOpacity},
+            {"shadowNormalBias",  e.light.shadowNormalBias},
+            {"shadowBlur",        e.light.shadowBlur},
+            {"shadowMaxDistance", e.light.shadowMaxDistance}
         };
 
         ej["camera"] = {
@@ -103,13 +108,25 @@ namespace Hargon
         };
 
         ej["collider"] = {
-            {"enabled",        e.collider.enabled},
-            {"isSphere",       e.collider.isSphere},
-            {"isTrigger",      e.collider.isTrigger},
-            {"collisionLayer", e.collider.collisionLayer},
-            {"collisionMask",  e.collider.collisionMask},
-            {"boxHalfExtents", Vec3ToJson(e.collider.boxHalfExtents)},
-            {"sphereRadius",   e.collider.sphereRadius}
+            {"enabled",           e.collider.enabled},
+            {"isSphere",          e.collider.isSphere},
+            {"isTrigger",         e.collider.isTrigger},
+            {"collisionLayer",    e.collider.collisionLayer},
+            {"collisionMask",     e.collider.collisionMask},
+            {"boxHalfExtents",    Vec3ToJson(e.collider.boxHalfExtents)},
+            {"sphereRadius",      e.collider.sphereRadius},
+            {"areaSpaceOverride", e.collider.areaSpaceOverride},
+            {"areaGravityVec",    Vec3ToJson(e.collider.areaGravityVec)},
+            {"areaForceVec",      Vec3ToJson(e.collider.areaForceVec)},
+            {"areaLinearDamp",    e.collider.areaLinearDamp}
+        };
+
+        ej["raycast"] = {
+            {"enabled",             e.raycast.enabled},
+            {"targetPosition",      Vec3ToJson(e.raycast.targetPosition)},
+            {"collisionMask",       e.raycast.collisionMask},
+            {"collideWithTriggers", e.raycast.collideWithTriggers},
+            {"showDebugRay",        e.raycast.showDebugRay}
         };
 
         ej["audioSource"] = {
@@ -200,6 +217,7 @@ namespace Hargon
         {
             const auto& mj = ej["mesh"];
             e.mesh.enabled = mj.value("enabled", true);
+            e.mesh.castShadows = mj.value("castShadows", true);
             e.mesh.primitive = MeshFactory::StringToPrimitive(mj.value("primitive", "Cube"));
             e.mesh.customObjPath = mj.value("customObjPath", "");
         }
@@ -225,7 +243,11 @@ namespace Hargon
             e.light.color = JsonToVec3(lj["color"], glm::vec3(1.0f));
             e.light.intensity = lj.value("intensity", 2.0f);
             e.light.range = lj.value("range", 15.0f);
-            e.light.shadowBias = lj.value("shadowBias", 0.0025f);
+            e.light.shadowBias = lj.value("shadowBias", 0.0020f);
+            e.light.shadowOpacity = lj.value("shadowOpacity", 0.94f);
+            e.light.shadowNormalBias = lj.value("shadowNormalBias", 0.035f);
+            e.light.shadowBlur = lj.value("shadowBlur", 1.25f);
+            e.light.shadowMaxDistance = lj.value("shadowMaxDistance", 85.0f);
         }
 
         if (ej.contains("camera"))
@@ -269,6 +291,20 @@ namespace Hargon
             e.collider.collisionMask = colj.value("collisionMask", 0xFFFFFFFFu);
             e.collider.boxHalfExtents = JsonToVec3(colj["boxHalfExtents"], glm::vec3(0.6f));
             e.collider.sphereRadius = colj.value("sphereRadius", 0.75f);
+            e.collider.areaSpaceOverride = colj.value("areaSpaceOverride", 0);
+            if (colj.contains("areaGravityVec")) e.collider.areaGravityVec = JsonToVec3(colj["areaGravityVec"], glm::vec3(0.0f, -6.0f, 0.0f));
+            if (colj.contains("areaForceVec")) e.collider.areaForceVec = JsonToVec3(colj["areaForceVec"], glm::vec3(0.0f));
+            e.collider.areaLinearDamp = colj.value("areaLinearDamp", 0.0f);
+        }
+
+        if (ej.contains("raycast"))
+        {
+            const auto& rcj = ej["raycast"];
+            e.raycast.enabled = rcj.value("enabled", false);
+            if (rcj.contains("targetPosition")) e.raycast.targetPosition = JsonToVec3(rcj["targetPosition"], glm::vec3(0.0f, 0.0f, 12.0f));
+            e.raycast.collisionMask = rcj.value("collisionMask", 0xFFFFFFFFu);
+            e.raycast.collideWithTriggers = rcj.value("collideWithTriggers", false);
+            e.raycast.showDebugRay = rcj.value("showDebugRay", true);
         }
 
         if (ej.contains("audioSource"))
@@ -384,7 +420,11 @@ namespace Hargon
             {"adjustmentContrast",   scene.worldEnv.adjustmentContrast},
             {"adjustmentSaturation", scene.worldEnv.adjustmentSaturation},
             {"frustumCullingEnabled",scene.worldEnv.frustumCullingEnabled},
-            {"shadowsEnabled",       scene.worldEnv.shadowsEnabled}
+            {"shadowsEnabled",       scene.worldEnv.shadowsEnabled},
+            {"ssaoEnabled",          scene.worldEnv.ssaoEnabled},
+            {"ssaoRadius",           scene.worldEnv.ssaoRadius},
+            {"ssaoIntensity",        scene.worldEnv.ssaoIntensity},
+            {"ssaoDirectAffect",     scene.worldEnv.ssaoDirectAffect}
         };
 
         json entitiesArr = json::array();
@@ -450,6 +490,10 @@ namespace Hargon
                 scene.worldEnv.adjustmentSaturation  = we.value("adjustmentSaturation", 1.08f);
                 scene.worldEnv.frustumCullingEnabled = we.value("frustumCullingEnabled", true);
                 scene.worldEnv.shadowsEnabled        = we.value("shadowsEnabled", true);
+                scene.worldEnv.ssaoEnabled           = we.value("ssaoEnabled", true);
+                scene.worldEnv.ssaoRadius            = we.value("ssaoRadius", 1.25f);
+                scene.worldEnv.ssaoIntensity         = we.value("ssaoIntensity", 1.45f);
+                scene.worldEnv.ssaoDirectAffect      = we.value("ssaoDirectAffect", 0.25f);
             }
 
             std::unordered_map<EntityID, EntityID> oldToNewId;

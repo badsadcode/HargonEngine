@@ -73,6 +73,8 @@ namespace Hargon
         float brightness = 1.05f;
         float fogMultiplier = 1.0f;
         bool dynamicLights = true;
+        bool shadowsEnabled = true;
+        bool ssaoEnabled = true;
         float bloodGoreScale = 1.0f;
         bool fullscreen = false;
         int resolutionIndex = 1; // 0=1280x720, 1=1600x900, 2=1920x1080

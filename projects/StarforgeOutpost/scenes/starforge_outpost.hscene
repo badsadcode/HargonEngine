@@ -1,5 +1,5 @@
 {
-  "ambientIntensity": 0.550000011920929,
+  "ambientIntensity": 0.24,
   "arenaHalfSize": 36.0,
   "entities": [
     {
@@ -100,9 +100,14 @@
           0.8600000143051147
         ],
         "enabled": true,
-        "intensity": 2.5999999046325684,
+        "intensity": 3.6,
         "isDirectional": true,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.95,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0,
+        "castShadows": true
       },
       "luaScript": {
         "enabled": false,
@@ -129,7 +134,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": false,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "SolarDirectionalLight",
       "parentId": 0,
@@ -298,7 +304,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -325,7 +335,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": false,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "MainGameCamera",
       "parentId": 0,
@@ -494,7 +505,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -521,7 +536,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "ArenaGround",
       "parentId": 0,
@@ -690,7 +706,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -717,7 +737,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "NorthWall",
       "parentId": 0,
@@ -886,7 +907,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -913,7 +938,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "SouthWall",
       "parentId": 0,
@@ -1082,7 +1108,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -1109,7 +1139,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "EastWall",
       "parentId": 0,
@@ -1278,7 +1309,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -1305,7 +1340,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cube"
+        "primitive": "Cube",
+        "castShadows": true
       },
       "name": "WestWall",
       "parentId": 0,
@@ -1474,7 +1510,12 @@
         "enabled": true,
         "intensity": 4.5,
         "isDirectional": false,
-        "range": 20.0
+        "range": 20.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0,
+        "castShadows": true
       },
       "luaScript": {
         "enabled": true,
@@ -1501,7 +1542,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Core"
+        "primitive": "Core",
+        "castShadows": false
       },
       "name": "StarforgeCore",
       "parentId": 0,
@@ -1670,7 +1712,11 @@
         "enabled": true,
         "intensity": 2.799999952316284,
         "isDirectional": false,
-        "range": 12.0
+        "range": 12.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -1697,7 +1743,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Rover"
+        "primitive": "Rover",
+        "castShadows": true
       },
       "name": "PlayerRover",
       "parentId": 0,
@@ -1866,7 +1913,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -1893,7 +1944,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Turret"
+        "primitive": "Turret",
+        "castShadows": true
       },
       "name": "DefenseTurret_1",
       "parentId": 0,
@@ -2062,7 +2114,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -2089,7 +2145,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Turret"
+        "primitive": "Turret",
+        "castShadows": true
       },
       "name": "DefenseTurret_2",
       "parentId": 0,
@@ -2258,7 +2315,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -2285,7 +2346,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cylinder"
+        "primitive": "Cylinder",
+        "castShadows": true
       },
       "name": "EnergyPylon_1",
       "parentId": 0,
@@ -2454,7 +2516,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -2481,7 +2547,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cylinder"
+        "primitive": "Cylinder",
+        "castShadows": true
       },
       "name": "EnergyPylon_2",
       "parentId": 0,
@@ -2650,7 +2717,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -2677,7 +2748,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cylinder"
+        "primitive": "Cylinder",
+        "castShadows": true
       },
       "name": "EnergyPylon_3",
       "parentId": 0,
@@ -2846,7 +2918,11 @@
         "enabled": false,
         "intensity": 2.5,
         "isDirectional": false,
-        "range": 18.0
+        "range": 18.0,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": false,
@@ -2873,7 +2949,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Cylinder"
+        "primitive": "Cylinder",
+        "castShadows": true
       },
       "name": "EnergyPylon_4",
       "parentId": 0,
@@ -3042,7 +3119,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -3069,7 +3150,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "EnergyCrystal_16",
       "parentId": 0,
@@ -3238,7 +3320,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -3265,7 +3351,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "SolarCrystal_17",
       "parentId": 0,
@@ -3434,7 +3521,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -3461,7 +3552,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "EnergyCrystal_18",
       "parentId": 0,
@@ -3630,7 +3722,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -3657,7 +3753,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "SolarCrystal_19",
       "parentId": 0,
@@ -3826,7 +3923,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -3853,7 +3954,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "EnergyCrystal_20",
       "parentId": 0,
@@ -4022,7 +4124,11 @@
         "enabled": true,
         "intensity": 2.200000047683716,
         "isDirectional": false,
-        "range": 7.5
+        "range": 7.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -4049,7 +4155,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Crystal"
+        "primitive": "Crystal",
+        "castShadows": true
       },
       "name": "SolarCrystal_21",
       "parentId": 0,
@@ -4218,7 +4325,11 @@
         "enabled": true,
         "intensity": 2.0,
         "isDirectional": false,
-        "range": 8.5
+        "range": 8.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -4245,7 +4356,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Drone"
+        "primitive": "Drone",
+        "castShadows": true
       },
       "name": "SeekerDrone_22",
       "parentId": 0,
@@ -4414,7 +4526,11 @@
         "enabled": true,
         "intensity": 2.0,
         "isDirectional": false,
-        "range": 8.5
+        "range": 8.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -4441,7 +4557,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Drone"
+        "primitive": "Drone",
+        "castShadows": true
       },
       "name": "SeekerDrone_23",
       "parentId": 0,
@@ -4610,7 +4727,11 @@
         "enabled": true,
         "intensity": 2.0,
         "isDirectional": false,
-        "range": 8.5
+        "range": 8.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -4637,7 +4758,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Drone"
+        "primitive": "Drone",
+        "castShadows": true
       },
       "name": "SeekerDrone_24",
       "parentId": 0,
@@ -4806,7 +4928,11 @@
         "enabled": true,
         "intensity": 2.0,
         "isDirectional": false,
-        "range": 8.5
+        "range": 8.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -4833,7 +4959,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Drone"
+        "primitive": "Drone",
+        "castShadows": true
       },
       "name": "SeekerDrone_25",
       "parentId": 0,
@@ -5002,7 +5129,11 @@
         "enabled": true,
         "intensity": 2.0,
         "isDirectional": false,
-        "range": 8.5
+        "range": 8.5,
+        "shadowOpacity": 0.94,
+        "shadowNormalBias": 0.035,
+        "shadowBlur": 1.25,
+        "shadowMaxDistance": 85.0
       },
       "luaScript": {
         "enabled": true,
@@ -5029,7 +5160,8 @@
       "mesh": {
         "customObjPath": "",
         "enabled": true,
-        "primitive": "Drone"
+        "primitive": "Drone",
+        "castShadows": true
       },
       "name": "SeekerDrone_26",
       "parentId": 0,
@@ -5101,9 +5233,9 @@
   ],
   "fogDensity": 0.0044999998062849045,
   "groundAmbientColor": [
-    0.07999999821186066,
-    0.10000000149011612,
-    0.15000000596046448
+    0.09,
+    0.12,
+    0.16
   ],
   "hud": {
     "collectibleLabel": "CRYSTALS",
@@ -5141,6 +5273,11 @@
     "glowIntensity": 0.3499999940395355,
     "tonemapExposure": 1.0499999523162842,
     "tonemapMode": 4,
-    "tonemapWhite": 1.0
+    "tonemapWhite": 1.0,
+    "shadowsEnabled": true,
+    "ssaoEnabled": true,
+    "ssaoRadius": 1.25,
+    "ssaoIntensity": 1.45,
+    "ssaoDirectAffect": 0.25
   }
 }

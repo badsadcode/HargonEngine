@@ -922,7 +922,13 @@ namespace Hargon
                 ImGui::SliderFloat("Exposure", &m_Scene.worldEnv.tonemapExposure, 0.4f, 2.2f);
                 ImGui::SliderFloat("Glow/Bloom", &m_Scene.worldEnv.glowIntensity, 0.0f, 1.5f);
                 ImGui::Checkbox("Frustum Cull", &m_Scene.worldEnv.frustumCullingEnabled);
-                ImGui::Checkbox("Directional Shadows (PCF)", &m_Scene.worldEnv.shadowsEnabled);
+                ImGui::Checkbox("PSSM + Omni Shadows", &m_Scene.worldEnv.shadowsEnabled);
+                ImGui::Checkbox("Screen-Space AO (SSAO)", &m_Scene.worldEnv.ssaoEnabled);
+                if (m_Scene.worldEnv.ssaoEnabled)
+                {
+                    ImGui::SliderFloat("SSAO Radius", &m_Scene.worldEnv.ssaoRadius, 0.25f, 3.0f);
+                    ImGui::SliderFloat("SSAO Intensity", &m_Scene.worldEnv.ssaoIntensity, 0.2f, 3.0f);
+                }
             }
         }
         ImGui::End();
@@ -1104,8 +1110,9 @@ namespace Hargon
                 }
 
                 // 5. PBR Material Component
-                if (ImGui::CollapsingHeader("PBR Material Component", ImGuiTreeNodeFlags_DefaultOpen))
+                if (ImGui::CollapsingHeader("PBR Material & Mesh Shadows", ImGuiTreeNodeFlags_DefaultOpen))
                 {
+                    ImGui::Checkbox("Cast Shadows", &e->mesh.castShadows);
                     ImGui::ColorEdit4("Albedo", &e->material.albedoColor.x);
                     ImGui::SliderFloat("Metallic", &e->material.metallic, 0.0f, 1.0f);
                     ImGui::SliderFloat("Roughness", &e->material.roughness, 0.05f, 1.0f);
@@ -1174,10 +1181,34 @@ namespace Hargon
                     int mask = static_cast<int>(e->collider.collisionMask & 0x7FFFFFFFu);
                     if (ImGui::InputInt("Collision Mask", &mask))
                         e->collider.collisionMask = static_cast<uint32_t>(mask);
+                    if (e->collider.isTrigger)
+                    {
+                        const char* areaModes[] = { "None (Trigger Only)", "Replace Gravity", "Wind / Force Field" };
+                        ImGui::Combo("Area3D Override", &e->collider.areaSpaceOverride, areaModes, 3);
+                        if (e->collider.areaSpaceOverride == 1)
+                            ImGui::DragFloat3("Area Gravity", &e->collider.areaGravityVec.x, 0.25f);
+                        else if (e->collider.areaSpaceOverride == 2)
+                            ImGui::DragFloat3("Area Force", &e->collider.areaForceVec.x, 0.5f);
+                        ImGui::SliderFloat("Area Linear Damp", &e->collider.areaLinearDamp, 0.0f, 10.0f);
+                    }
+                }
+
+                // 9b. Godot RayCast3D Sensor Node
+                if (ImGui::CollapsingHeader("RayCast3D Sensor (Godot)"))
+                {
+                    ImGui::Checkbox("RayCast Enabled", &e->raycast.enabled);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Debug Ray", &e->raycast.showDebugRay);
+                    ImGui::DragFloat3("Target Position", &e->raycast.targetPosition.x, 0.25f);
+                    ImGui::Checkbox("Collide With Triggers", &e->raycast.collideWithTriggers);
+                    ImGui::Text("Hit: %s | Dist: %.2f | Entity: %llu",
+                        e->raycast.isColliding ? "YES" : "NO",
+                        e->raycast.hitDistance,
+                        static_cast<unsigned long long>(e->raycast.hitEntity));
                 }
 
                 // 10. Light3D Component
-                if (ImGui::CollapsingHeader("Light3D (Directional / Point)"))
+                if (ImGui::CollapsingHeader("Light3D (Directional / Omni)"))
                 {
                     ImGui::Checkbox("Light Enabled", &e->light.enabled);
                     ImGui::SameLine();
@@ -1186,7 +1217,12 @@ namespace Hargon
                     ImGui::ColorEdit3("Light Color", &e->light.color.x);
                     ImGui::SliderFloat("Intensity", &e->light.intensity, 0.0f, 12.0f);
                     ImGui::SliderFloat("Range", &e->light.range, 1.0f, 100.0f);
+                    ImGui::SliderFloat("Shadow Opacity", &e->light.shadowOpacity, 0.0f, 1.0f);
                     ImGui::SliderFloat("Shadow Bias", &e->light.shadowBias, 0.0002f, 0.02f, "%.4f");
+                    ImGui::SliderFloat("Normal Bias", &e->light.shadowNormalBias, 0.0f, 0.2f, "%.3f");
+                    ImGui::SliderFloat("Shadow Blur", &e->light.shadowBlur, 0.5f, 3.0f);
+                    if (e->light.isDirectional)
+                        ImGui::SliderFloat("Max Distance", &e->light.shadowMaxDistance, 25.0f, 150.0f);
                 }
             }
         }

@@ -30,23 +30,34 @@ namespace Hargon
     struct alignas(16) SceneCBData
     {
         glm::mat4 viewProj;
-        glm::mat4 lightViewProj;
-        glm::vec4 cameraPos;       // xyz = pos, w = time
-        glm::vec4 dirLightDir;     // xyz = dir toward light, w = intensity
-        glm::vec4 dirLightColor;   // xyz = color, w = ambientStrength
-        glm::vec4 skyColor;        // xyz = skyHorizonColor, w = fogDensity
-        glm::vec4 groundColor;     // xyz = groundAmbientColor, w = pointLightCount
+        glm::mat4 lightViewProj0;
+        glm::mat4 lightViewProj1;
+        glm::vec4 cameraPos;                  // xyz = pos, w = time
+        glm::vec4 dirLightDir;                // xyz = dir toward light, w = intensity
+        glm::vec4 dirLightColor;              // xyz = color, w = ambientStrength
+        glm::vec4 skyColor;                   // xyz = skyHorizonColor, w = fogDensity
+        glm::vec4 groundColor;                // xyz = groundAmbientColor, w = pointLightCount
         glm::vec4 pointLightPosRange[8];
         glm::vec4 pointLightColorIntensity[8];
-        glm::vec4 envParams0;      // x = tonemapMode, y = exposure, z = white, w = glowIntensity
-        glm::vec4 envParams1;      // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
-        glm::vec4 envParams2;      // x = brightness, y = saturation, z = glowBloom, w = shadowStrength
-        glm::vec4 shadowParams;    // x = shadowBias, y = 1.0/shadowSize, z = shadowsEnabled, w = 0
+        glm::vec4 pointLightShadowInfo[8];    // x = shadowSlot (-1 none, 0..3), y = nearClip, z = shadowBias, w = shadowOpacity
+        glm::vec4 envParams0;                 // x = tonemapMode, y = exposure, z = white, w = glowIntensity
+        glm::vec4 envParams1;                 // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
+        glm::vec4 envParams2;                 // x = brightness, y = saturation, z = glowBloom, w = dirShadowOpacity
+        glm::vec4 shadowParams;               // x = dirShadowBias, y = dirNormalBias, z = dirShadowBlur, w = shadowsEnabled
+        glm::vec4 ssaoParams;                 // x = ssaoEnabled, y = ssaoDirectAffect, z = invScreenW, w = invScreenH
     };
 
     struct alignas(16) ShadowCBData
     {
         glm::mat4 lightViewProj;
+    };
+
+    struct alignas(16) SSAOCBData
+    {
+        glm::mat4 proj;
+        glm::mat4 invProj;
+        glm::vec4 ssaoParams;                 // x = radius, y = intensity, z = bias, w = enabled
+        glm::vec4 viewportInfo;               // x = invW, y = invH, z = time, w = 0
     };
 
     // Godot-inspired Fast Frustum Culling (servers/rendering/renderer_scene_cull.h)
@@ -152,6 +163,16 @@ namespace Hargon
             nvrhi::ShaderType::Vertex, "ShadowDepth_VS", "VSMain",
             g_ShadowDepth_VS_SPV, sizeof(g_ShadowDepth_VS_SPV), "assets/shaders/ShadowDepth.hlsl");
 
+        m_SSAOVS = m_RHI->CreateShader(
+            nvrhi::ShaderType::Vertex, "SSAO_VS", "VSMain",
+            g_SSAO_VS_SPV, sizeof(g_SSAO_VS_SPV), "assets/shaders/SSAO.hlsl");
+        m_SSAOPS = m_RHI->CreateShader(
+            nvrhi::ShaderType::Pixel, "SSAO_PS", "PSMain",
+            g_SSAO_PS_SPV, sizeof(g_SSAO_PS_SPV), "assets/shaders/SSAO.hlsl");
+        m_SSAOBlurPS = m_RHI->CreateShader(
+            nvrhi::ShaderType::Pixel, "SSAOBlur_PS", "PSBlur",
+            g_SSAO_Blur_PS_SPV, sizeof(g_SSAO_Blur_PS_SPV), "assets/shaders/SSAO.hlsl");
+
         m_SkyboxVS = m_RHI->CreateShader(
             nvrhi::ShaderType::Vertex, "Skybox_VS", "VSMain",
             g_Skybox_VS_SPV, sizeof(g_Skybox_VS_SPV), "assets/shaders/Skybox.hlsl");
@@ -166,7 +187,8 @@ namespace Hargon
             nvrhi::ShaderType::Pixel, "LineGizmo_PS", "PSMain",
             g_LineGizmo_PS_SPV, sizeof(g_LineGizmo_PS_SPV), "assets/shaders/LineGizmo.hlsl", Shaders::kLineGizmoHLSL);
 
-        if (!m_PBRVS || !m_PBRPS || !m_ShadowVS || !m_SkyboxVS || !m_SkyboxPS || !m_LineVS || !m_LinePS)
+        if (!m_PBRVS || !m_PBRPS || !m_ShadowVS || !m_SSAOVS || !m_SSAOPS || !m_SSAOBlurPS ||
+            !m_SkyboxVS || !m_SkyboxPS || !m_LineVS || !m_LinePS)
         {
             Log::Error("Renderer3D failed to create one or more shaders!");
             return false;
@@ -211,10 +233,11 @@ namespace Hargon
         };
         m_LineInputLayout = m_Device->createInputLayout(lineAttrs, 2, m_LineVS);
 
-        // 3. Volatile Constant Buffers
+        // 3. Volatile Constant Buffers (sized generously for 2-cascade PSSM + 4x6 Omni faces + Z-Prepass)
         m_SceneCB  = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(SceneCBData),  "SceneCB",  64));
-        m_ObjectCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ObjectCBData), "ObjectCB", 2048));
-        m_ShadowCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ShadowCBData), "ShadowCB", 64));
+        m_ObjectCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ObjectCBData), "ObjectCB", 16384));
+        m_ShadowCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ShadowCBData), "ShadowCB", 512));
+        m_SSAOCB   = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(SSAOCBData),   "SSAOCB",   64));
         m_SkyboxCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(SkyboxCBData), "SkyboxCB", 64));
         m_LineCB   = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(LineCBData),   "LineCB",   64));
 
@@ -245,15 +268,15 @@ namespace Hargon
         sampDesc.setAllAddressModes(nvrhi::SamplerAddressMode::Wrap);
         m_LinearSampler = m_Device->createSampler(sampDesc);
 
-        // 5b. 2048x2048 Directional Shadow Map Texture + Framebuffer + Clamp Sampler
+        // 5b. 2048x1024 2-Cascade Directional PSSM + 3072x1024 8-Slot 6-Face OmniShadowAtlas
         nvrhi::TextureDesc shadowDesc;
         shadowDesc.width = 2048;
-        shadowDesc.height = 2048;
+        shadowDesc.height = 1024;
         shadowDesc.format = nvrhi::Format::D32;
         shadowDesc.isRenderTarget = true;
         shadowDesc.isShaderResource = true;
         shadowDesc.isTypeless = true;
-        shadowDesc.debugName = "DirectionalShadowMap";
+        shadowDesc.debugName = "DirectionalShadowMapPSSM";
         shadowDesc.initialState = nvrhi::ResourceStates::ShaderResource;
         shadowDesc.keepInitialState = true;
         shadowDesc.useClearValue = true;
@@ -264,15 +287,48 @@ namespace Hargon
         shadowFbDesc.setDepthAttachment(m_ShadowMapTexture);
         m_ShadowFramebuffer = m_Device->createFramebuffer(shadowFbDesc);
 
+        nvrhi::TextureDesc omniDesc;
+        omniDesc.width = 3072;
+        omniDesc.height = 1024;
+        omniDesc.format = nvrhi::Format::D32;
+        omniDesc.isRenderTarget = true;
+        omniDesc.isShaderResource = true;
+        omniDesc.isTypeless = true;
+        omniDesc.debugName = "OmniPointShadowAtlas";
+        omniDesc.initialState = nvrhi::ResourceStates::ShaderResource;
+        omniDesc.keepInitialState = true;
+        omniDesc.useClearValue = true;
+        omniDesc.clearValue = nvrhi::Color(1.0f, 0.0f, 0.0f, 0.0f);
+        m_OmniShadowAtlas = m_Device->createTexture(omniDesc);
+
+        nvrhi::FramebufferDesc omniFbDesc;
+        omniFbDesc.setDepthAttachment(m_OmniShadowAtlas);
+        m_OmniShadowFramebuffer = m_Device->createFramebuffer(omniFbDesc);
+
         nvrhi::SamplerDesc shadowSampDesc;
         shadowSampDesc.setAllFilters(false);
         shadowSampDesc.setAllAddressModes(nvrhi::SamplerAddressMode::Clamp);
         m_ShadowClampSampler = m_Device->createSampler(shadowSampDesc);
 
+        nvrhi::SamplerDesc pointSampDesc;
+        pointSampDesc.setAllFilters(false);
+        pointSampDesc.setAllAddressModes(nvrhi::SamplerAddressMode::Clamp);
+        m_PointClampSampler = m_Device->createSampler(pointSampDesc);
+
+        // Allocate initial Camera Depth Prepass + Half-Res SSAO targets before initCmd clear
+        EnsurePrepassResources(1280, 720);
+
         nvrhi::CommandListHandle initCmd = m_Device->createCommandList();
         initCmd->open();
 
         nvrhi::utils::ClearDepthStencilAttachment(initCmd, m_ShadowFramebuffer, 1.0f, 0);
+        nvrhi::utils::ClearDepthStencilAttachment(initCmd, m_OmniShadowFramebuffer, 1.0f, 0);
+        if (m_PrepassFramebuffer)
+            nvrhi::utils::ClearDepthStencilAttachment(initCmd, m_PrepassFramebuffer, 1.0f, 0);
+        if (m_SSAOFramebuffer)
+            nvrhi::utils::ClearColorAttachment(initCmd, m_SSAOFramebuffer, 0, nvrhi::Color(1.0f, 1.0f, 1.0f, 1.0f));
+        if (m_SSAOBlurFramebuffer)
+            nvrhi::utils::ClearColorAttachment(initCmd, m_SSAOBlurFramebuffer, 0, nvrhi::Color(1.0f, 1.0f, 1.0f, 1.0f));
 
         uint32_t whitePixels[16];
         std::fill(std::begin(whitePixels), std::end(whitePixels), 0xFFFFFFFFu);
@@ -298,6 +354,8 @@ namespace Hargon
                 nvrhi::BindingSetItem::ConstantBuffer(1, m_ObjectCB),
                 nvrhi::BindingSetItem::Texture_SRV(0, m_WhiteTexture),
                 nvrhi::BindingSetItem::Texture_SRV(1, m_ShadowMapTexture),
+                nvrhi::BindingSetItem::Texture_SRV(2, m_OmniShadowAtlas),
+                nvrhi::BindingSetItem::Texture_SRV(3, m_SSAOBlurTexture),
                 nvrhi::BindingSetItem::Sampler(0, m_LinearSampler),
                 nvrhi::BindingSetItem::Sampler(1, m_ShadowClampSampler)
             };
@@ -327,6 +385,64 @@ namespace Hargon
                 .setDepthWriteEnable(true)
                 .setDepthFunc(nvrhi::ComparisonFunc::LessOrEqual);
             m_ShadowPipeline = m_Device->createGraphicsPipeline(desc, m_ShadowFramebuffer);
+
+            // Unbiased Depth Prepass pipeline for crisp camera Z-Prepass -> SSAO
+            nvrhi::GraphicsPipelineDesc preDesc;
+            preDesc.primType = nvrhi::PrimitiveType::TriangleList;
+            preDesc.inputLayout = m_MeshInputLayout;
+            preDesc.VS = m_ShadowVS;
+            preDesc.PS = nullptr;
+            preDesc.bindingLayouts = { m_ShadowBindingLayout };
+            preDesc.renderState.rasterState.setCullNone();
+            preDesc.renderState.depthStencilState
+                .setDepthTestEnable(true)
+                .setDepthWriteEnable(true)
+                .setDepthFunc(nvrhi::ComparisonFunc::LessOrEqual);
+            m_DepthPrepassPipeline = m_Device->createGraphicsPipeline(preDesc, m_PrepassFramebuffer);
+        }
+
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_SSAOCB),
+                nvrhi::BindingSetItem::Texture_SRV(0, m_PrepassDepthTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_PointClampSampler)
+            };
+            nvrhi::utils::CreateBindingSetAndLayout(m_Device, nvrhi::ShaderType::Pixel, 0, bset, m_SSAOBindingLayout, m_SSAOBindingSet);
+
+            nvrhi::GraphicsPipelineDesc desc;
+            desc.primType = nvrhi::PrimitiveType::TriangleList;
+            desc.inputLayout = nullptr;
+            desc.VS = m_SSAOVS;
+            desc.PS = m_SSAOPS;
+            desc.bindingLayouts = { m_SSAOBindingLayout };
+            desc.renderState.rasterState.setCullNone();
+            desc.renderState.depthStencilState
+                .setDepthTestEnable(false)
+                .setDepthWriteEnable(false);
+            m_SSAOPipeline = m_Device->createGraphicsPipeline(desc, m_SSAOFramebuffer);
+        }
+
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_SSAOCB),
+                nvrhi::BindingSetItem::Texture_SRV(1, m_SSAOTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_PointClampSampler)
+            };
+            nvrhi::utils::CreateBindingSetAndLayout(m_Device, nvrhi::ShaderType::Pixel, 0, bset, m_SSAOBlurBindingLayout, m_SSAOBlurBindingSet);
+
+            nvrhi::GraphicsPipelineDesc desc;
+            desc.primType = nvrhi::PrimitiveType::TriangleList;
+            desc.inputLayout = nullptr;
+            desc.VS = m_SSAOVS;
+            desc.PS = m_SSAOBlurPS;
+            desc.bindingLayouts = { m_SSAOBlurBindingLayout };
+            desc.renderState.rasterState.setCullNone();
+            desc.renderState.depthStencilState
+                .setDepthTestEnable(false)
+                .setDepthWriteEnable(false);
+            m_SSAOBlurPipeline = m_Device->createGraphicsPipeline(desc, m_SSAOBlurFramebuffer);
         }
 
         {
@@ -356,6 +472,9 @@ namespace Hargon
         m_CustomMeshes.clear();
 
         m_ShadowPipeline = nullptr;
+        m_DepthPrepassPipeline = nullptr;
+        m_SSAOPipeline = nullptr;
+        m_SSAOBlurPipeline = nullptr;
         m_PBRPipeline = nullptr;
         m_SkyboxPipeline = nullptr;
         m_LinePipeline = nullptr;
@@ -363,6 +482,10 @@ namespace Hargon
 
         m_ShadowBindingSet = nullptr;
         m_ShadowBindingLayout = nullptr;
+        m_SSAOBindingSet = nullptr;
+        m_SSAOBindingLayout = nullptr;
+        m_SSAOBlurBindingSet = nullptr;
+        m_SSAOBlurBindingLayout = nullptr;
         m_PBRBindingSet = nullptr;
         m_PBRBindingLayout = nullptr;
         m_SkyboxBindingSet = nullptr;
@@ -372,7 +495,18 @@ namespace Hargon
 
         m_ShadowFramebuffer = nullptr;
         m_ShadowMapTexture = nullptr;
+        m_OmniShadowFramebuffer = nullptr;
+        m_OmniShadowAtlas = nullptr;
+        m_PrepassFramebuffer = nullptr;
+        m_PrepassDepthTexture = nullptr;
+        m_SSAOFramebuffer = nullptr;
+        m_SSAOTexture = nullptr;
+        m_SSAOBlurFramebuffer = nullptr;
+        m_SSAOBlurTexture = nullptr;
+        m_PrepassWidth = 0;
+        m_PrepassHeight = 0;
         m_ShadowClampSampler = nullptr;
+        m_PointClampSampler = nullptr;
         m_WhiteTexture = nullptr;
         m_LinearSampler = nullptr;
 
@@ -381,6 +515,7 @@ namespace Hargon
         m_SceneCB = nullptr;
         m_ObjectCB = nullptr;
         m_ShadowCB = nullptr;
+        m_SSAOCB = nullptr;
         m_SkyboxCB = nullptr;
         m_LineCB = nullptr;
 
@@ -390,10 +525,114 @@ namespace Hargon
         m_PBRVS = nullptr;
         m_PBRPS = nullptr;
         m_ShadowVS = nullptr;
+        m_SSAOVS = nullptr;
+        m_SSAOPS = nullptr;
+        m_SSAOBlurPS = nullptr;
         m_SkyboxVS = nullptr;
         m_SkyboxPS = nullptr;
         m_LineVS = nullptr;
         m_LinePS = nullptr;
+    }
+
+    void Renderer3D::EnsurePrepassResources(uint32_t vpW, uint32_t vpH)
+    {
+        vpW = std::max(vpW, 64u);
+        vpH = std::max(vpH, 64u);
+        if (m_PrepassWidth == vpW && m_PrepassHeight == vpH && m_PrepassDepthTexture && m_SSAOBlurTexture)
+            return;
+
+        if (m_PrepassWidth > 0 && m_RHI)
+            m_RHI->WaitForIdle();
+
+        m_PrepassWidth = vpW;
+        m_PrepassHeight = vpH;
+        uint32_t halfW = std::max(vpW / 2u, 32u);
+        uint32_t halfH = std::max(vpH / 2u, 32u);
+
+        m_PrepassFramebuffer = nullptr;
+        m_PrepassDepthTexture = nullptr;
+        m_SSAOFramebuffer = nullptr;
+        m_SSAOTexture = nullptr;
+        m_SSAOBlurFramebuffer = nullptr;
+        m_SSAOBlurTexture = nullptr;
+
+        nvrhi::TextureDesc depthDesc;
+        depthDesc.width = vpW;
+        depthDesc.height = vpH;
+        depthDesc.format = nvrhi::Format::D32;
+        depthDesc.isRenderTarget = true;
+        depthDesc.isShaderResource = true;
+        depthDesc.isTypeless = true;
+        depthDesc.debugName = "PrepassDepthTex";
+        depthDesc.initialState = nvrhi::ResourceStates::ShaderResource;
+        depthDesc.keepInitialState = true;
+        depthDesc.useClearValue = true;
+        depthDesc.clearValue = nvrhi::Color(1.0f, 0.0f, 0.0f, 0.0f);
+        m_PrepassDepthTexture = m_Device->createTexture(depthDesc);
+
+        nvrhi::FramebufferDesc depthFb;
+        depthFb.setDepthAttachment(m_PrepassDepthTexture);
+        m_PrepassFramebuffer = m_Device->createFramebuffer(depthFb);
+
+        nvrhi::TextureDesc ssaoDesc;
+        ssaoDesc.width = halfW;
+        ssaoDesc.height = halfH;
+        ssaoDesc.format = nvrhi::Format::RGBA8_UNORM;
+        ssaoDesc.isRenderTarget = true;
+        ssaoDesc.isShaderResource = true;
+        ssaoDesc.debugName = "SSAORawTex";
+        ssaoDesc.initialState = nvrhi::ResourceStates::ShaderResource;
+        ssaoDesc.keepInitialState = true;
+        ssaoDesc.useClearValue = true;
+        ssaoDesc.clearValue = nvrhi::Color(1.0f, 1.0f, 1.0f, 1.0f);
+        m_SSAOTexture = m_Device->createTexture(ssaoDesc);
+
+        nvrhi::FramebufferDesc ssaoFb;
+        ssaoFb.addColorAttachment(m_SSAOTexture);
+        m_SSAOFramebuffer = m_Device->createFramebuffer(ssaoFb);
+
+        ssaoDesc.debugName = "SSAOBlurTex";
+        m_SSAOBlurTexture = m_Device->createTexture(ssaoDesc);
+        nvrhi::FramebufferDesc blurFb;
+        blurFb.addColorAttachment(m_SSAOBlurTexture);
+        m_SSAOBlurFramebuffer = m_Device->createFramebuffer(blurFb);
+
+        // Rebuild binding sets if layouts already exist
+        if (m_SSAOBindingLayout)
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_SSAOCB),
+                nvrhi::BindingSetItem::Texture_SRV(0, m_PrepassDepthTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_PointClampSampler)
+            };
+            m_SSAOBindingSet = m_Device->createBindingSet(bset, m_SSAOBindingLayout);
+        }
+        if (m_SSAOBlurBindingLayout)
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_SSAOCB),
+                nvrhi::BindingSetItem::Texture_SRV(1, m_SSAOTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_PointClampSampler)
+            };
+            m_SSAOBlurBindingSet = m_Device->createBindingSet(bset, m_SSAOBlurBindingLayout);
+        }
+        if (m_PBRBindingLayout)
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_SceneCB),
+                nvrhi::BindingSetItem::ConstantBuffer(1, m_ObjectCB),
+                nvrhi::BindingSetItem::Texture_SRV(0, m_WhiteTexture),
+                nvrhi::BindingSetItem::Texture_SRV(1, m_ShadowMapTexture),
+                nvrhi::BindingSetItem::Texture_SRV(2, m_OmniShadowAtlas),
+                nvrhi::BindingSetItem::Texture_SRV(3, m_SSAOBlurTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_LinearSampler),
+                nvrhi::BindingSetItem::Sampler(1, m_ShadowClampSampler)
+            };
+            m_PBRBindingSet = m_Device->createBindingSet(bset, m_PBRBindingLayout);
+        }
     }
 
     void Renderer3D::EnsurePipelines(nvrhi::IFramebuffer* targetFramebuffer)
@@ -775,33 +1014,40 @@ namespace Hargon
         const auto& fbDesc = targetFramebuffer->getDesc();
         uint32_t vpW = fbDesc.colorAttachments[0].texture->getDesc().width;
         uint32_t vpH = fbDesc.colorAttachments[0].texture->getDesc().height;
+        EnsurePrepassResources(vpW, vpH);
 
         nvrhi::ViewportState viewportState = nvrhi::ViewportState()
             .addViewportAndScissorRect(nvrhi::Viewport(static_cast<float>(vpW), static_cast<float>(vpH)));
-
-        // Clear color & depth
-        nvrhi::utils::ClearColorAttachment(cmd, targetFramebuffer, 0, nvrhi::Color(0.04f, 0.06f, 0.12f, 1.0f));
-        nvrhi::utils::ClearDepthStencilAttachment(cmd, targetFramebuffer, 1.0f, 0);
 
         // Gather directional & point lights from scene
         glm::vec3 sunDir = glm::normalize(glm::vec3(0.45f, 0.78f, -0.42f));
         glm::vec3 sunColor(1.0f, 0.95f, 0.85f);
         float sunIntensity = 2.5f;
         bool dirCastShadows = true;
-        float dirShadowBias = 0.0025f;
+        float dirShadowBias = 0.0020f;
+        float dirShadowOpacity = 0.94f;
+        float dirNormalBias = 0.035f;
+        float dirShadowBlur = 1.25f;
+        float dirShadowMaxDist = 85.0f;
 
         SceneCBData sceneCB{};
         sceneCB.viewProj = camera.GetViewProjectionMatrix();
         sceneCB.cameraPos = glm::vec4(camera.position, timeSeconds);
+        for (int i = 0; i < 8; ++i)
+            sceneCB.pointLightShadowInfo[i] = glm::vec4(-1.0f, 0.22f, 0.002f, 0.9f);
 
-        int pointLightCount = 0;
         struct PointCandidate
         {
+            EntityID entityId;
+            std::string tag;
             glm::vec3 pos;
             float range;
             glm::vec3 color;
             float intensity;
             float distSq;
+            bool castShadows;
+            float shadowBias;
+            float shadowOpacity;
         };
         std::vector<PointCandidate> pointCandidates;
         pointCandidates.reserve(64);
@@ -821,80 +1067,279 @@ namespace Hargon
                 sunIntensity = e.light.intensity;
                 dirCastShadows = e.light.castShadows;
                 dirShadowBias = e.light.shadowBias;
+                dirShadowOpacity = e.light.shadowOpacity;
+                dirNormalBias = e.light.shadowNormalBias;
+                dirShadowBlur = e.light.shadowBlur;
+                dirShadowMaxDist = e.light.shadowMaxDistance;
             }
             else
             {
                 glm::vec3 worldPos = scene.GetWorldPosition(e);
                 glm::vec3 diff = worldPos - camera.position;
                 float d2 = glm::dot(diff, diff);
-                // Prioritize dynamic muzzle flashes / projectiles so they are always active
                 if (e.tag.tag == "Projectile" || e.tag.tag == "EnemyProjectile" || e.tag.tag == "MuzzleFlash")
                     d2 *= 0.05f;
-                pointCandidates.push_back({ worldPos, e.light.range, e.light.color, e.light.intensity, d2 });
+                pointCandidates.push_back({
+                    e.id, e.tag.tag, worldPos, e.light.range, e.light.color, e.light.intensity,
+                    d2, e.light.castShadows, e.light.shadowBias, e.light.shadowOpacity
+                });
             }
         }
 
         std::sort(pointCandidates.begin(), pointCandidates.end(),
             [](const PointCandidate& a, const PointCandidate& b) { return a.distSq < b.distSq; });
 
+        int pointLightCount = 0;
+        struct OmniSlotJob
+        {
+            int slot = 0;
+            PointCandidate light;
+        };
+        std::vector<OmniSlotJob> omniJobs;
+        omniJobs.reserve(8);
+
         for (const auto& pc : pointCandidates)
         {
             if (pointLightCount >= 8)
                 break;
+
+            int assignedSlot = -1;
+            if (scene.worldEnv.shadowsEnabled && pc.castShadows && m_ShadowPipeline && m_OmniShadowFramebuffer &&
+                static_cast<int>(omniJobs.size()) < 8 &&
+                pc.distSq < 48.0f * 48.0f &&
+                pc.tag != "Projectile" && pc.tag != "EnemyProjectile" && pc.tag != "MuzzleFlash")
+            {
+                assignedSlot = static_cast<int>(omniJobs.size());
+                omniJobs.push_back({ assignedSlot, pc });
+            }
+
             sceneCB.pointLightPosRange[pointLightCount] = glm::vec4(pc.pos, pc.range);
             sceneCB.pointLightColorIntensity[pointLightCount] = glm::vec4(pc.color, pc.intensity);
+            sceneCB.pointLightShadowInfo[pointLightCount] = glm::vec4(
+                static_cast<float>(assignedSlot), 0.22f, std::max(pc.shadowBias, 0.0012f), pc.shadowOpacity);
             ++pointLightCount;
         }
 
-        // 0. Real-Time 2048x2048 Directional Shadow Depth Pass (Godot DirectionalLight3D-inspired)
+        // 0a. 360-degree 6-Face OmniPointShadowAtlas Pass (up to 4 nearest shadow-casting point lights)
+        if (!omniJobs.empty())
+        {
+            nvrhi::utils::ClearDepthStencilAttachment(cmd, m_OmniShadowFramebuffer, 1.0f, 0);
+
+            static const glm::vec3 kFaceDirs[6] = {
+                glm::vec3( 1.0f,  0.0f,  0.0f),
+                glm::vec3(-1.0f,  0.0f,  0.0f),
+                glm::vec3( 0.0f,  1.0f,  0.0f),
+                glm::vec3( 0.0f, -1.0f,  0.0f),
+                glm::vec3( 0.0f,  0.0f,  1.0f),
+                glm::vec3( 0.0f,  0.0f, -1.0f)
+            };
+            static const glm::vec3 kFaceUps[6] = {
+                glm::vec3(0.0f, 1.0f,  0.0f),
+                glm::vec3(0.0f, 1.0f,  0.0f),
+                glm::vec3(0.0f, 0.0f, -1.0f),
+                glm::vec3(0.0f, 0.0f,  1.0f),
+                glm::vec3(0.0f, 1.0f,  0.0f),
+                glm::vec3(0.0f, 1.0f,  0.0f)
+            };
+
+            for (const auto& job : omniJobs)
+            {
+                const float lightRange = std::max(job.light.range, 0.5f);
+                const glm::mat4 faceProj = glm::perspectiveLH_ZO(glm::radians(90.0f), 1.0f, 0.22f, lightRange);
+                const int slotX = job.slot & 3;
+                const int slotY = job.slot >> 2;
+
+                for (int face = 0; face < 6; ++face)
+                {
+                    const glm::mat4 faceView = glm::lookAtLH(job.light.pos, job.light.pos + kFaceDirs[face], kFaceUps[face]);
+                    const glm::mat4 faceVP = faceProj * faceView;
+
+                    ShadowCBData shadowCB{ faceVP };
+                    cmd->writeBuffer(m_ShadowCB, &shadowCB, sizeof(shadowCB));
+
+                    const int col = face % 3;
+                    const int row = face / 3;
+                    const float tileX = static_cast<float>(slotX * 768 + col * 256);
+                    const float tileY = static_cast<float>(slotY * 512 + row * 256);
+                    nvrhi::ViewportState tileVp = nvrhi::ViewportState()
+                        .addViewportAndScissorRect(nvrhi::Viewport(tileX, tileX + 256.0f, tileY, tileY + 256.0f, 0.0f, 1.0f));
+
+                    FrustumCuller faceFrustum;
+                    faceFrustum.ExtractFromMatrix(faceVP);
+
+                    for (const auto& e : scene.GetEntities())
+                    {
+                        if (!e.alive || !e.mesh.enabled || !e.mesh.castShadows) continue;
+                        if (e.id == job.light.entityId || e.parentId == job.light.entityId) continue;
+                        if (e.tag.tag == "ViewModel" || e.tag.tag == "MuzzleFlash" ||
+                            e.tag.tag == "Projectile" || e.tag.tag == "EnemyProjectile")
+                            continue;
+
+                        glm::mat4 worldMat = scene.GetWorldMatrix(e);
+                        if (e.tag.tag != "LevelGeometry")
+                        {
+                            glm::vec3 wp = glm::vec3(worldMat[3]);
+                            glm::vec3 halfExt = glm::max(glm::abs(e.transform.scale) * 1.35f, glm::vec3(1.2f));
+                            float boundR = glm::length(halfExt);
+                            if (glm::length(wp - job.light.pos) - boundR > lightRange)
+                                continue;
+                            if (!faceFrustum.InFrustum(wp - halfExt, wp + halfExt))
+                                continue;
+                        }
+
+                        const GPUMesh& gpuMesh = GetOrCreateMesh(cmd, e.mesh);
+                        if (!gpuMesh.vertexBuffer || !gpuMesh.indexBuffer || gpuMesh.indexCount == 0)
+                            continue;
+
+                        ObjectCBData objCB{};
+                        objCB.model = worldMat;
+                        cmd->writeBuffer(m_ObjectCB, &objCB, sizeof(objCB));
+
+                        nvrhi::GraphicsState state;
+                        state.pipeline = m_ShadowPipeline;
+                        state.framebuffer = m_OmniShadowFramebuffer;
+                        state.viewport = tileVp;
+                        state.bindings = { m_ShadowBindingSet };
+                        state.vertexBuffers = { { gpuMesh.vertexBuffer, 0, 0 } };
+                        state.indexBuffer = { gpuMesh.indexBuffer, nvrhi::Format::R32_UINT, 0 };
+                        cmd->setGraphicsState(state);
+
+                        nvrhi::DrawArguments args;
+                        args.vertexCount = gpuMesh.indexCount;
+                        cmd->drawIndexed(args);
+                        ++m_Stats.drawCalls;
+                    }
+                }
+            }
+        }
+
+        // 0b. 2-Cascade Directional Shadow Map (PSSM 2048x1024: Cascade 0 Near Crisp + Cascade 1 Far Arena)
         bool shadowsOn = scene.worldEnv.shadowsEnabled && dirCastShadows && m_ShadowPipeline && m_ShadowFramebuffer;
-        glm::mat4 lightViewProj(1.0f);
+        glm::mat4 lightViewProj0(1.0f);
+        glm::mat4 lightViewProj1(1.0f);
         if (shadowsOn)
         {
-            glm::vec3 flatFwd(camera.forward.x, 0.0f, camera.forward.z);
-            float ffLen = glm::length(flatFwd);
-            glm::vec3 focus = camera.position + (ffLen > 0.05f ? (flatFwd / ffLen) * 14.0f : glm::vec3(0.0f));
-            focus.y = 0.0f;
-
-            float orthoHalf = std::clamp(scene.arenaHalfSize * 1.1f, 28.0f, 44.0f);
-            glm::vec3 lightUp = (std::abs(sunDir.y) > 0.98f) ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
-            glm::mat4 tmpView = glm::lookAtLH(focus + sunDir * 55.0f, focus, lightUp);
-            float texelWorld = (2.0f * orthoHalf) / 2048.0f;
-            glm::vec3 rightAxis(tmpView[0][0], tmpView[1][0], tmpView[2][0]);
-            glm::vec3 upAxis(tmpView[0][1], tmpView[1][1], tmpView[2][1]);
-            float sx = std::floor(glm::dot(focus, rightAxis) / texelWorld + 0.5f) * texelWorld;
-            float sy = std::floor(glm::dot(focus, upAxis) / texelWorld + 0.5f) * texelWorld;
-            glm::vec3 snappedFocus = rightAxis * sx + upAxis * sy + sunDir * glm::dot(focus, sunDir);
-
-            glm::mat4 lightView = glm::lookAtLH(snappedFocus + sunDir * 55.0f, snappedFocus, lightUp);
-            glm::mat4 lightProj = glm::orthoLH_ZO(-orthoHalf, orthoHalf, -orthoHalf, orthoHalf, 1.0f, 130.0f);
-            lightViewProj = lightProj * lightView;
-
-            ShadowCBData shadowCB{ lightViewProj };
-            cmd->writeBuffer(m_ShadowCB, &shadowCB, sizeof(shadowCB));
             nvrhi::utils::ClearDepthStencilAttachment(cmd, m_ShadowFramebuffer, 1.0f, 0);
 
-            nvrhi::ViewportState shadowVp = nvrhi::ViewportState()
-                .addViewportAndScissorRect(nvrhi::Viewport(2048.0f, 2048.0f));
+            glm::vec3 flatFwd(camera.forward.x, 0.0f, camera.forward.z);
+            float ffLen = glm::length(flatFwd);
+            glm::vec3 dirFwd = (ffLen > 0.05f) ? (flatFwd / ffLen) : glm::vec3(0.0f, 0.0f, 1.0f);
+            glm::vec3 lightUp = (std::abs(sunDir.y) > 0.98f) ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+
+            const float cascadeHalf[2] = {
+                18.0f,
+                std::clamp(std::max(scene.arenaHalfSize * 1.15f, dirShadowMaxDist * 0.65f), 42.0f, 68.0f)
+            };
+            const float cascadeLead[2] = { 10.0f, 24.0f };
+            const float cascadePullback[2] = { 70.0f, 85.0f };
+            const float cascadeZFar[2] = { 175.0f, 210.0f };
+
+            for (int c = 0; c < 2; ++c)
+            {
+                glm::vec3 focus = camera.position + dirFwd * cascadeLead[c];
+                focus.y = camera.position.y * (c == 0 ? 0.45f : 0.35f);
+
+                glm::mat4 tmpView = glm::lookAtLH(focus + sunDir * cascadePullback[c], focus, lightUp);
+                float texelWorld = (2.0f * cascadeHalf[c]) / 1024.0f;
+                glm::vec3 rightAxis(tmpView[0][0], tmpView[1][0], tmpView[2][0]);
+                glm::vec3 upAxis(tmpView[0][1], tmpView[1][1], tmpView[2][1]);
+                float sx = std::floor(glm::dot(focus, rightAxis) / texelWorld + 0.5f) * texelWorld;
+                float sy = std::floor(glm::dot(focus, upAxis) / texelWorld + 0.5f) * texelWorld;
+                glm::vec3 snappedFocus = rightAxis * sx + upAxis * sy + sunDir * glm::dot(focus, sunDir);
+
+                glm::mat4 lightView = glm::lookAtLH(snappedFocus + sunDir * cascadePullback[c], snappedFocus, lightUp);
+                glm::mat4 lightProj = glm::orthoLH_ZO(-cascadeHalf[c], cascadeHalf[c], -cascadeHalf[c], cascadeHalf[c], 1.0f, cascadeZFar[c]);
+                glm::mat4 cascadeVP = lightProj * lightView;
+                if (c == 0) lightViewProj0 = cascadeVP;
+                else        lightViewProj1 = cascadeVP;
+
+                ShadowCBData shadowCB{ cascadeVP };
+                cmd->writeBuffer(m_ShadowCB, &shadowCB, sizeof(shadowCB));
+
+                nvrhi::ViewportState shadowVp = nvrhi::ViewportState()
+                    .addViewportAndScissorRect(nvrhi::Viewport(c * 1024.0f, (c + 1) * 1024.0f, 0.0f, 1024.0f, 0.0f, 1.0f));
+
+                FrustumCuller cascadeFrustum;
+                cascadeFrustum.ExtractFromMatrix(cascadeVP);
+
+                for (const auto& e : scene.GetEntities())
+                {
+                    if (!e.alive || !e.mesh.enabled || !e.mesh.castShadows) continue;
+                    if (e.tag.tag == "ViewModel" || e.tag.tag == "MuzzleFlash" ||
+                        e.tag.tag == "Projectile" || e.tag.tag == "EnemyProjectile")
+                        continue;
+
+                    glm::mat4 worldMat = scene.GetWorldMatrix(e);
+                    if (e.tag.tag != "LevelGeometry")
+                    {
+                        glm::vec3 wp = glm::vec3(worldMat[3]);
+                        glm::vec3 halfExt = glm::max(glm::abs(e.transform.scale) * 1.35f, glm::vec3(1.2f));
+                        if (!cascadeFrustum.InFrustum(wp - halfExt, wp + halfExt))
+                            continue;
+                    }
+
+                    const GPUMesh& gpuMesh = GetOrCreateMesh(cmd, e.mesh);
+                    if (!gpuMesh.vertexBuffer || !gpuMesh.indexBuffer || gpuMesh.indexCount == 0)
+                        continue;
+
+                    ObjectCBData objCB{};
+                    objCB.model = worldMat;
+                    cmd->writeBuffer(m_ObjectCB, &objCB, sizeof(objCB));
+
+                    nvrhi::GraphicsState state;
+                    state.pipeline = m_ShadowPipeline;
+                    state.framebuffer = m_ShadowFramebuffer;
+                    state.viewport = shadowVp;
+                    state.bindings = { m_ShadowBindingSet };
+                    state.vertexBuffers = { { gpuMesh.vertexBuffer, 0, 0 } };
+                    state.indexBuffer = { gpuMesh.indexBuffer, nvrhi::Format::R32_UINT, 0 };
+                    cmd->setGraphicsState(state);
+
+                    nvrhi::DrawArguments args;
+                    args.vertexCount = gpuMesh.indexCount;
+                    cmd->drawIndexed(args);
+                    ++m_Stats.drawCalls;
+                }
+            }
+        }
+
+        // 0c. Camera Depth Prepass + Half-Res Bilateral SSAO (Godot Environment::ssao_enabled)
+        bool ssaoActive = scene.worldEnv.ssaoEnabled && m_DepthPrepassPipeline && m_SSAOPipeline && m_SSAOBlurPipeline && m_PrepassFramebuffer;
+        if (ssaoActive)
+        {
+            nvrhi::utils::ClearDepthStencilAttachment(cmd, m_PrepassFramebuffer, 1.0f, 0);
+            ShadowCBData camCB{ sceneCB.viewProj };
+            cmd->writeBuffer(m_ShadowCB, &camCB, sizeof(camCB));
+
+            FrustumCuller camFrustum;
+            camFrustum.ExtractFromMatrix(sceneCB.viewProj);
 
             for (const auto& e : scene.GetEntities())
             {
                 if (!e.alive || !e.mesh.enabled) continue;
-                if (e.tag.tag == "ViewModel" || e.tag.tag == "MuzzleFlash" || e.tag.tag == "Projectile" || e.tag.tag == "EnemyProjectile")
-                    continue;
+                if (e.tag.tag == "ViewModel" || e.tag.tag == "MuzzleFlash") continue;
+
+                glm::mat4 worldMat = scene.GetWorldMatrix(e);
+                if (scene.worldEnv.frustumCullingEnabled && e.tag.tag != "LevelGeometry")
+                {
+                    glm::vec3 wp = glm::vec3(worldMat[3]);
+                    glm::vec3 halfExt = glm::max(glm::abs(e.transform.scale) * 1.35f, glm::vec3(1.2f));
+                    if (!camFrustum.InFrustum(wp - halfExt, wp + halfExt))
+                        continue;
+                }
 
                 const GPUMesh& gpuMesh = GetOrCreateMesh(cmd, e.mesh);
                 if (!gpuMesh.vertexBuffer || !gpuMesh.indexBuffer || gpuMesh.indexCount == 0)
                     continue;
 
                 ObjectCBData objCB{};
-                objCB.model = scene.GetWorldMatrix(e);
+                objCB.model = worldMat;
                 cmd->writeBuffer(m_ObjectCB, &objCB, sizeof(objCB));
 
                 nvrhi::GraphicsState state;
-                state.pipeline = m_ShadowPipeline;
-                state.framebuffer = m_ShadowFramebuffer;
-                state.viewport = shadowVp;
+                state.pipeline = m_DepthPrepassPipeline;
+                state.framebuffer = m_PrepassFramebuffer;
+                state.viewport = viewportState;
                 state.bindings = { m_ShadowBindingSet };
                 state.vertexBuffers = { { gpuMesh.vertexBuffer, 0, 0 } };
                 state.indexBuffer = { gpuMesh.indexBuffer, nvrhi::Format::R32_UINT, 0 };
@@ -905,9 +1350,53 @@ namespace Hargon
                 cmd->drawIndexed(args);
                 ++m_Stats.drawCalls;
             }
+
+            uint32_t halfW = std::max(vpW / 2u, 32u);
+            uint32_t halfH = std::max(vpH / 2u, 32u);
+            nvrhi::ViewportState halfVp = nvrhi::ViewportState()
+                .addViewportAndScissorRect(nvrhi::Viewport(static_cast<float>(halfW), static_cast<float>(halfH)));
+
+            SSAOCBData ssaoCB{};
+            ssaoCB.proj = camera.GetProjectionMatrix();
+            ssaoCB.invProj = glm::inverse(ssaoCB.proj);
+            ssaoCB.ssaoParams = glm::vec4(scene.worldEnv.ssaoRadius, scene.worldEnv.ssaoIntensity, 0.035f, 1.0f);
+            ssaoCB.viewportInfo = glm::vec4(1.0f / static_cast<float>(vpW), 1.0f / static_cast<float>(vpH), timeSeconds, 0.0f);
+            cmd->writeBuffer(m_SSAOCB, &ssaoCB, sizeof(ssaoCB));
+
+            {
+                nvrhi::GraphicsState state;
+                state.pipeline = m_SSAOPipeline;
+                state.framebuffer = m_SSAOFramebuffer;
+                state.viewport = halfVp;
+                state.bindings = { m_SSAOBindingSet };
+                cmd->setGraphicsState(state);
+
+                nvrhi::DrawArguments args;
+                args.vertexCount = 3;
+                cmd->draw(args);
+                ++m_Stats.drawCalls;
+            }
+            {
+                nvrhi::GraphicsState state;
+                state.pipeline = m_SSAOBlurPipeline;
+                state.framebuffer = m_SSAOBlurFramebuffer;
+                state.viewport = halfVp;
+                state.bindings = { m_SSAOBlurBindingSet };
+                cmd->setGraphicsState(state);
+
+                nvrhi::DrawArguments args;
+                args.vertexCount = 3;
+                cmd->draw(args);
+                ++m_Stats.drawCalls;
+            }
         }
 
-        sceneCB.lightViewProj = lightViewProj;
+        // Clear main target color & depth for Skybox + PBR Pass
+        nvrhi::utils::ClearColorAttachment(cmd, targetFramebuffer, 0, nvrhi::Color(0.04f, 0.06f, 0.12f, 1.0f));
+        nvrhi::utils::ClearDepthStencilAttachment(cmd, targetFramebuffer, 1.0f, 0);
+
+        sceneCB.lightViewProj0 = lightViewProj0;
+        sceneCB.lightViewProj1 = lightViewProj1;
         sceneCB.dirLightDir = glm::vec4(sunDir, sunIntensity);
         sceneCB.dirLightColor = glm::vec4(sunColor, scene.ambientIntensity);
         sceneCB.skyColor = glm::vec4(scene.skyHorizonColor, scene.fogDensity);
@@ -926,12 +1415,17 @@ namespace Hargon
             scene.worldEnv.adjustmentEnabled ? scene.worldEnv.adjustmentBrightness : 1.0f,
             scene.worldEnv.adjustmentEnabled ? scene.worldEnv.adjustmentSaturation : 1.0f,
             scene.worldEnv.glowEnabled ? scene.worldEnv.glowBloom : 0.0f,
-            0.70f);
+            dirShadowOpacity);
         sceneCB.shadowParams = glm::vec4(
             dirShadowBias,
-            1.0f / 2048.0f,
-            shadowsOn ? 1.0f : 0.0f,
-            0.0f);
+            dirNormalBias,
+            dirShadowBlur,
+            shadowsOn ? 1.0f : 0.0f);
+        sceneCB.ssaoParams = glm::vec4(
+            ssaoActive ? 1.0f : 0.0f,
+            scene.worldEnv.ssaoDirectAffect,
+            1.0f / static_cast<float>(vpW),
+            1.0f / static_cast<float>(vpH));
         m_Stats.activePointLights = static_cast<uint32_t>(pointLightCount);
 
         // 1. Render Skybox
@@ -1054,6 +1548,27 @@ namespace Hargon
                     AddWireSphere(worldLines, e.transform.position, e.collider.sphereRadius, col);
                 else
                     AddWireBox(worldLines, e.transform.position, e.collider.boxHalfExtents, col);
+            }
+        }
+
+        // Godot RayCast3D Debug Sensor Lines (in Editor / Collider View)
+        if (drawEditorGrid || drawColliders)
+        {
+            for (const auto& e : scene.GetEntities())
+            {
+                if (!e.alive || !e.raycast.enabled || !e.raycast.showDebugRay) continue;
+                glm::vec3 start = scene.GetWorldPosition(e);
+                glm::vec3 localEnd = e.raycast.targetPosition;
+                glm::vec3 worldEnd = glm::vec3(scene.GetWorldMatrix(e) * glm::vec4(localEnd, 1.0f));
+                glm::vec3 endPt = e.raycast.isColliding ? e.raycast.hitPoint : worldEnd;
+                glm::vec4 beamCol = e.raycast.isColliding
+                    ? glm::vec4(1.0f, 0.24f, 0.16f, 1.0f)
+                    : glm::vec4(0.18f, 0.96f, 0.65f, 1.0f);
+                AddLine(worldLines, start, endPt, beamCol);
+                if (e.raycast.isColliding)
+                {
+                    AddLine(worldLines, e.raycast.hitPoint, e.raycast.hitPoint + e.raycast.hitNormal * 0.65f, glm::vec4(1.0f, 0.88f, 0.20f, 1.0f));
+                }
             }
         }
 

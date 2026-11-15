@@ -64,6 +64,12 @@ namespace Hargon
 
         bool frustumCullingEnabled = true;
         bool shadowsEnabled = true;
+
+        // Godot Screen-Space Ambient Occlusion (scene/resources/environment.h)
+        bool ssaoEnabled = true;
+        float ssaoRadius = 1.25f;
+        float ssaoIntensity = 1.45f;
+        float ssaoDirectAffect = 0.25f;
     };
 
     struct TagComponent
@@ -131,6 +137,7 @@ namespace Hargon
     struct MeshComponent
     {
         bool enabled = true;
+        bool castShadows = true; // Godot GeometryInstance3D::ShadowCastingSetting
         MeshPrimitive primitive = MeshPrimitive::Cube;
         std::string customObjPath;
     };
@@ -154,7 +161,11 @@ namespace Hargon
         glm::vec3 color{ 1.0f, 0.95f, 0.85f };
         float intensity = 2.5f;
         float range = 18.0f;
-        float shadowBias = 0.0025f;
+        float shadowBias = 0.0020f;
+        float shadowOpacity = 0.94f;     // Godot Light3D::PARAM_SHADOW_OPACITY
+        float shadowNormalBias = 0.035f; // Godot Light3D::PARAM_SHADOW_NORMAL_BIAS
+        float shadowBlur = 1.25f;        // Godot Light3D::PARAM_SHADOW_BLUR
+        float shadowMaxDistance = 85.0f; // Godot DirectionalLight3D max shadow distance
     };
 
     // Inspired by Godot's Camera3D & SpringArm3D (scene/3d/camera_3d.h, spring_arm_3d.h)
@@ -199,6 +210,29 @@ namespace Hargon
         uint32_t collisionMask = 0xFFFFFFFFu;
         glm::vec3 boxHalfExtents{ 0.6f, 0.6f, 0.6f };
         float sphereRadius = 0.75f;
+
+        // Godot Area3D space override when isTrigger == true (0=None, 1=ReplaceGravity, 2=WindForce)
+        int areaSpaceOverride = 0;
+        glm::vec3 areaGravityVec{ 0.0f, -6.0f, 0.0f };
+        glm::vec3 areaForceVec{ 0.0f, 0.0f, 0.0f };
+        float areaLinearDamp = 0.0f;
+    };
+
+    // Inspired by Godot's RayCast3D (scene/3d/physics/ray_cast_3d.h)
+    struct RayCastComponent
+    {
+        bool enabled = false;
+        glm::vec3 targetPosition{ 0.0f, 0.0f, 12.0f };
+        uint32_t collisionMask = 0xFFFFFFFFu;
+        bool collideWithTriggers = false;
+        bool showDebugRay = true;
+
+        // Live runtime query results
+        bool isColliding = false;
+        EntityID hitEntity = kInvalidEntity;
+        glm::vec3 hitPoint{ 0.0f };
+        glm::vec3 hitNormal{ 0.0f, 1.0f, 0.0f };
+        float hitDistance = 0.0f;
     };
 
     // Inspired by Godot's AudioStreamPlayer3D (scene/3d/audio_stream_player_3d.h)
@@ -302,6 +336,7 @@ namespace Hargon
         CameraComponent camera;
         RigidBodyComponent rigidBody;
         ColliderComponent collider;
+        RayCastComponent raycast;
         AudioSourceComponent audioSource;
         LuaScriptComponent luaScript;
         ParticleEmitterComponent particleEmitter;

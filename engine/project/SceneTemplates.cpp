@@ -170,6 +170,11 @@ namespace Hargon
         scene.hudControlsText = "[W/S] Thrust   [A/D] Steer   [SPACE] Fire Plasma Cannons   [SHIFT] Boost   [R] Restart";
         scene.victoryText = "VICTORY! STARFORGE OUTPOST SECURED!";
         scene.defeatText = "OUTPOST OVERRUN! PRESS [R] TO RESTART MISSION";
+        scene.groundAmbientColor = glm::vec3(0.09f, 0.12f, 0.16f);
+        scene.ambientIntensity = 0.24f;
+        scene.worldEnv.ssaoEnabled = true;
+        scene.worldEnv.ssaoRadius = 1.25f;
+        scene.worldEnv.ssaoIntensity = 1.45f;
 
         {
             Entity& sun = scene.CreateEntity("SolarDirectionalLight", "Light");
@@ -178,8 +183,10 @@ namespace Hargon
             sun.mesh.enabled = false;
             sun.light.enabled = true;
             sun.light.isDirectional = true;
+            sun.light.castShadows = true;
             sun.light.color = glm::vec3(1.0f, 0.95f, 0.86f);
-            sun.light.intensity = 2.6f;
+            sun.light.intensity = 3.6f;
+            sun.light.shadowOpacity = 0.95f;
         }
 
         {
@@ -403,8 +410,8 @@ namespace Hargon
         scene.sceneName = "Aether Realms: Skyward Sanctum";
         scene.skyZenithColor = glm::vec3(0.06f, 0.24f, 0.58f);
         scene.skyHorizonColor = glm::vec3(0.55f, 0.78f, 0.96f);
-        scene.groundAmbientColor = glm::vec3(0.24f, 0.34f, 0.42f);
-        scene.ambientIntensity = 0.68f;
+        scene.groundAmbientColor = glm::vec3(0.11f, 0.16f, 0.24f);
+        scene.ambientIntensity = 0.14f;
         scene.fogDensity = 0.0022f;
         scene.arenaHalfSize = 48.0f;
         scene.maxWaves = 1;
@@ -421,6 +428,9 @@ namespace Hargon
         scene.worldEnv.adjustmentBrightness = 1.04f;
         scene.worldEnv.adjustmentContrast = 1.06f;
         scene.worldEnv.adjustmentSaturation = 1.16f;
+        scene.worldEnv.ssaoEnabled = true;
+        scene.worldEnv.ssaoRadius = 1.25f;
+        scene.worldEnv.ssaoIntensity = 1.45f;
 
         scene.introBannerText = "COLLECT ALL 8 SKYWARD RELICS & DEFEAT THE SKY-CONSTRUCT GUARDIANS!";
         scene.hudBannerText = scene.introBannerText;
@@ -440,8 +450,10 @@ namespace Hargon
             sun.mesh.enabled = false;
             sun.light.enabled = true;
             sun.light.isDirectional = true;
+            sun.light.castShadows = true;
             sun.light.color = glm::vec3(1.0f, 0.96f, 0.84f);
-            sun.light.intensity = 3.2f;
+            sun.light.intensity = 3.75f;
+            sun.light.shadowOpacity = 0.95f;
         }
 
         {
@@ -692,8 +704,8 @@ namespace Hargon
         scene.sceneName = title.empty() ? "Skyway 3D Time-Trial" : title;
         scene.skyZenithColor = glm::vec3(0.08f, 0.16f, 0.42f);
         scene.skyHorizonColor = glm::vec3(0.95f, 0.62f, 0.42f);
-        scene.groundAmbientColor = glm::vec3(0.22f, 0.24f, 0.30f);
-        scene.ambientIntensity = 0.68f;
+        scene.groundAmbientColor = glm::vec3(0.10f, 0.10f, 0.16f);
+        scene.ambientIntensity = 0.21f;
         scene.fogDensity = 0.0018f;
         scene.arenaHalfSize = 60.0f;
         scene.maxWaves = 1;
@@ -704,6 +716,9 @@ namespace Hargon
         scene.worldEnv.glowIntensity = 0.45f;
         scene.worldEnv.glowBloom = 0.22f;
         scene.worldEnv.fogSunScatter = 0.40f;
+        scene.worldEnv.ssaoEnabled = true;
+        scene.worldEnv.ssaoRadius = 1.25f;
+        scene.worldEnv.ssaoIntensity = 1.45f;
 
         scene.introBannerText = "LEAP THE SKYWAY PLATFORMS & COLLECT ALL 6 SOLAR BEACONS!";
         scene.hudBannerText = scene.introBannerText;
@@ -719,13 +734,14 @@ namespace Hargon
         {
             Entity& sun = scene.CreateEntity("SunsetSun", "Light");
             sun.transform.position = glm::vec3(15.0f, 34.0f, -25.0f);
-            sun.transform.rotation = glm::vec3(42.0f, -28.0f, 0.0f);
+            sun.transform.rotation = glm::vec3(38.0f, -38.0f, 0.0f);
             sun.mesh.enabled = false;
             sun.light.enabled = true;
             sun.light.isDirectional = true;
             sun.light.castShadows = true;
             sun.light.color = glm::vec3(1.0f, 0.90f, 0.74f);
-            sun.light.intensity = 3.2f;
+            sun.light.intensity = 3.85f;
+            sun.light.shadowOpacity = 0.95f;
         }
 
         {
@@ -813,8 +829,9 @@ namespace Hargon
             runner.material.emissiveColor = glm::vec3(1.0f, 0.55f, 0.15f);
             runner.material.emissiveStrength = 0.9f;
             runner.light.enabled = true;
+            runner.light.castShadows = false;
             runner.light.color = glm::vec3(1.0f, 0.72f, 0.30f);
-            runner.light.intensity = 2.4f;
+            runner.light.intensity = 2.0f;
             runner.light.range = 10.0f;
             runner.rigidBody.enabled = true;
             runner.rigidBody.mass = 1.2f;
@@ -875,8 +892,8 @@ namespace Hargon
         scene.defeatText = "DEFEATED! PRESS [R] TO RESTART";
         scene.skyZenithColor = glm::vec3(0.05f, 0.14f, 0.34f);
         scene.skyHorizonColor = glm::vec3(0.32f, 0.56f, 0.78f);
-        scene.groundAmbientColor = glm::vec3(0.15f, 0.18f, 0.22f);
-        scene.ambientIntensity = 0.60f;
+        scene.groundAmbientColor = glm::vec3(0.11f, 0.14f, 0.18f);
+        scene.ambientIntensity = 0.30f;
         scene.fogDensity = 0.0025f;
 
         {
@@ -886,8 +903,10 @@ namespace Hargon
             sun.mesh.enabled = false;
             sun.light.enabled = true;
             sun.light.isDirectional = true;
+            sun.light.castShadows = true;
             sun.light.color = glm::vec3(1.0f, 0.96f, 0.88f);
-            sun.light.intensity = 2.8f;
+            sun.light.intensity = 3.5f;
+            sun.light.shadowOpacity = 0.95f;
         }
 
         {

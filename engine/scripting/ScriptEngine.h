@@ -27,6 +27,7 @@ namespace Hargon
 
         void UpdateScripts(Scene& scene, float dt);
         void DispatchCollision(Scene& scene, EntityID a, EntityID b);
+        void DispatchTrigger(Scene& scene, EntityID a, EntityID b, bool entered);
 
         bool ReloadAllScripts(Scene& scene);
         bool ExecuteSnippet(const std::string& luaCode);

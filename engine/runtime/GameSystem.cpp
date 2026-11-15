@@ -190,7 +190,18 @@ namespace Hargon
             }
         }
 
-        // 4. Process Collision Events
+        // 4. Process Trigger Enter/Exit Signals + Collision Events
+        for (const auto& ev : physics.GetTriggerEntered())
+        {
+            scene.EmitSignal("trigger_entered", ev.entityA, "entered");
+            scripts.DispatchTrigger(scene, ev.entityA, ev.entityB, true);
+        }
+        for (const auto& ev : physics.GetTriggerExited())
+        {
+            scene.EmitSignal("trigger_exited", ev.entityA, "exited");
+            scripts.DispatchTrigger(scene, ev.entityA, ev.entityB, false);
+        }
+
         for (const auto& col : physics.GetCollisions())
         {
             scripts.DispatchCollision(scene, col.entityA, col.entityB);

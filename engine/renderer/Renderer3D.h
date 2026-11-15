@@ -96,6 +96,7 @@ namespace Hargon
 
     private:
         void EnsurePipelines(nvrhi::IFramebuffer* targetFramebuffer);
+        void EnsurePrepassResources(uint32_t vpW, uint32_t vpH);
         const GPUMesh& GetOrCreateMesh(nvrhi::ICommandList* cmd, const MeshComponent& meshComp);
 
         void AddLine(std::vector<LineVertex>& lines, const glm::vec3& a, const glm::vec3& b, const glm::vec4& color);
@@ -111,6 +112,9 @@ namespace Hargon
         nvrhi::ShaderHandle m_PBRVS;
         nvrhi::ShaderHandle m_PBRPS;
         nvrhi::ShaderHandle m_ShadowVS;
+        nvrhi::ShaderHandle m_SSAOVS;
+        nvrhi::ShaderHandle m_SSAOPS;
+        nvrhi::ShaderHandle m_SSAOBlurPS;
         nvrhi::ShaderHandle m_SkyboxVS;
         nvrhi::ShaderHandle m_SkyboxPS;
         nvrhi::ShaderHandle m_LineVS;
@@ -124,6 +128,7 @@ namespace Hargon
         nvrhi::BufferHandle m_SceneCB;
         nvrhi::BufferHandle m_ObjectCB;
         nvrhi::BufferHandle m_ShadowCB;
+        nvrhi::BufferHandle m_SSAOCB;
         nvrhi::BufferHandle m_SkyboxCB;
         nvrhi::BufferHandle m_LineCB;
 
@@ -132,18 +137,33 @@ namespace Hargon
         nvrhi::BufferHandle m_DynamicGizmoVB;
         uint32_t m_MaxLineVertices = 16384;
 
-        // Default white texture + directional shadow map + samplers
+        // Default white texture + 2-cascade PSSM + 6-face OmniShadowAtlas + Depth Prepass / SSAO + samplers
         nvrhi::TextureHandle m_WhiteTexture;
         nvrhi::TextureHandle m_ShadowMapTexture;
         nvrhi::FramebufferHandle m_ShadowFramebuffer;
+        nvrhi::TextureHandle m_OmniShadowAtlas;
+        nvrhi::FramebufferHandle m_OmniShadowFramebuffer;
+        nvrhi::TextureHandle m_PrepassDepthTexture;
+        nvrhi::FramebufferHandle m_PrepassFramebuffer;
+        nvrhi::TextureHandle m_SSAOTexture;
+        nvrhi::FramebufferHandle m_SSAOFramebuffer;
+        nvrhi::TextureHandle m_SSAOBlurTexture;
+        nvrhi::FramebufferHandle m_SSAOBlurFramebuffer;
+        uint32_t m_PrepassWidth = 0;
+        uint32_t m_PrepassHeight = 0;
         nvrhi::SamplerHandle m_LinearSampler;
         nvrhi::SamplerHandle m_ShadowClampSampler;
+        nvrhi::SamplerHandle m_PointClampSampler;
 
         // Binding layouts and sets
         nvrhi::BindingLayoutHandle m_PBRBindingLayout;
         nvrhi::BindingSetHandle m_PBRBindingSet;
         nvrhi::BindingLayoutHandle m_ShadowBindingLayout;
         nvrhi::BindingSetHandle m_ShadowBindingSet;
+        nvrhi::BindingLayoutHandle m_SSAOBindingLayout;
+        nvrhi::BindingSetHandle m_SSAOBindingSet;
+        nvrhi::BindingLayoutHandle m_SSAOBlurBindingLayout;
+        nvrhi::BindingSetHandle m_SSAOBlurBindingSet;
         nvrhi::BindingLayoutHandle m_SkyboxBindingLayout;
         nvrhi::BindingSetHandle m_SkyboxBindingSet;
         nvrhi::BindingLayoutHandle m_LineBindingLayout;
@@ -153,6 +173,9 @@ namespace Hargon
         nvrhi::FramebufferInfo m_CachedFbInfo;
         bool m_HasCachedFbInfo = false;
         nvrhi::GraphicsPipelineHandle m_ShadowPipeline;
+        nvrhi::GraphicsPipelineHandle m_DepthPrepassPipeline;
+        nvrhi::GraphicsPipelineHandle m_SSAOPipeline;
+        nvrhi::GraphicsPipelineHandle m_SSAOBlurPipeline;
         nvrhi::GraphicsPipelineHandle m_PBRPipeline;
         nvrhi::GraphicsPipelineHandle m_SkyboxPipeline;
         nvrhi::GraphicsPipelineHandle m_LinePipeline;
