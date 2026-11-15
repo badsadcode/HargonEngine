@@ -23,6 +23,7 @@ namespace Hargon
         void Shutdown();
 
         void SetScene(Scene* scene) { m_Scene = scene; }
+        void SetProjectRootDir(const std::string& rootDir) { m_ProjectRootDir = rootDir; }
         void SetParticleCallback(ParticleBurstCallback cb) { m_ParticleCallback = std::move(cb); }
 
         void UpdateScripts(Scene& scene, float dt);
@@ -30,6 +31,7 @@ namespace Hargon
         void DispatchTrigger(Scene& scene, EntityID a, EntityID b, bool entered);
 
         bool ReloadAllScripts(Scene& scene);
+        bool ResetForNewProject(Scene& scene);
         bool ExecuteSnippet(const std::string& luaCode);
 
         // Godot Timer-inspired named countdown timers accessible from Lua & C++
@@ -55,6 +57,7 @@ namespace Hargon
         Scene* m_Scene = nullptr;
         Window* m_Window = nullptr;
         AudioEngine* m_Audio = nullptr;
+        std::string m_ProjectRootDir;
         ParticleBurstCallback m_ParticleCallback;
         std::unordered_map<std::string, float> m_Timers;
     };

@@ -672,10 +672,28 @@ namespace Hargon
             std::string scriptFile = entity.luaScript.scriptPath;
             if (!std::filesystem::exists(scriptFile))
             {
-                std::string fallback = "assets/scripts/" + std::filesystem::path(scriptFile).filename().string();
-                if (std::filesystem::exists(fallback))
-                    scriptFile = fallback;
-                else
+                std::filesystem::path relPath(scriptFile);
+                std::string fname = relPath.filename().string();
+                std::vector<std::string> candidates;
+                if (!m_ProjectRootDir.empty())
+                {
+                    candidates.push_back((std::filesystem::path(m_ProjectRootDir) / relPath).string());
+                    candidates.push_back((std::filesystem::path(m_ProjectRootDir) / "scripts" / fname).string());
+                    candidates.push_back((std::filesystem::path(m_ProjectRootDir) / "assets" / "scripts" / fname).string());
+                }
+                candidates.push_back("assets/scripts/" + fname);
+
+                bool found = false;
+                for (const auto& cand : candidates)
+                {
+                    if (std::filesystem::exists(cand))
+                    {
+                        scriptFile = cand;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
                     return false;
             }
 
@@ -844,6 +862,26 @@ namespace Hargon
             e.luaScript.initialized = false;
         }
         Log::Lua("Hot-reloaded all entity Lua scripts.");
+        return true;
+    }
+
+    bool ScriptEngine::ResetForNewProject(Scene& scene)
+    {
+        m_Timers.clear();
+        m_Scene = &scene;
+        Shutdown();
+        m_L = luaL_newstate();
+        if (!m_L)
+        {
+            Log::Error("Failed to recreate Lua 5.4 state!");
+            return false;
+        }
+        luaL_openlibs(m_L);
+        lua_pushlightuserdata(m_L, this);
+        lua_setfield(m_L, LUA_REGISTRYINDEX, "HargonScriptEnginePtr");
+        RegisterBindings();
+        for (auto& e : scene.GetEntities())
+            e.luaScript.initialized = false;
         return true;
     }
 

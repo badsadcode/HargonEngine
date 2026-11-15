@@ -120,7 +120,8 @@ namespace Hargon
         FPSGameManager() = default;
         ~FPSGameManager() = default;
 
-        void Init(Scene* scene, Renderer3D* renderer, AudioEngine* audio, Window* window, bool startInMenu = true);
+        bool Init(Scene* scene, Renderer3D* renderer, AudioEngine* audio, Window* window, bool startInMenu = true);
+        void SetProjectRootDir(const std::string& rootDir) { m_ProjectRootDir = rootDir; }
 
         // Loads one of the 10 BadLevel campaign maps (campaign 1..2, levelIndex 1..5)
         bool LoadCampaignLevel(int campaign, int levelIndex, bool resetPlayerInventory = false);
@@ -208,6 +209,7 @@ namespace Hargon
         Renderer3D* m_Renderer = nullptr;
         AudioEngine* m_Audio = nullptr;
         Window* m_Window = nullptr;
+        std::string m_ProjectRootDir;
 
         // Campaign & Level Metadata
         int m_Campaign = 1;       // 1 = The Elder Ward, 2 = The Iron Citadel

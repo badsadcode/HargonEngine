@@ -80,19 +80,33 @@ namespace Hargon
         return "c" + std::to_string(c) + "m" + std::to_string(m);
     }
 
-    void FPSGameManager::Init(Scene* scene, Renderer3D* renderer, AudioEngine* audio, Window* window, bool startInMenu)
+    bool FPSGameManager::Init(Scene* scene, Renderer3D* renderer, AudioEngine* audio, Window* window, bool startInMenu)
     {
         m_Scene = scene;
         m_Renderer = renderer;
         m_Audio = audio;
         m_Window = window;
 
-        LoadSettings("settings.json");
+        std::string settingsPath = "settings.json";
+        if (!std::filesystem::exists(settingsPath) && !m_ProjectRootDir.empty())
+        {
+            std::filesystem::path projSettings = std::filesystem::path(m_ProjectRootDir) / "settings.json";
+            if (std::filesystem::exists(projSettings))
+                settingsPath = projSettings.string();
+        }
+        LoadSettings(settingsPath);
         ApplySettings();
         RefreshSaveSlots();
 
-        LoadCampaignLevel(1, 1, true);
+        if (!LoadCampaignLevel(1, 1, true))
+        {
+            if (m_Scene)
+                m_Scene->Clear();
+            SetMenuState(FPSMenuState::None);
+            return false;
+        }
         SetMenuState(startInMenu ? FPSMenuState::MainMenu : FPSMenuState::None);
+        return true;
     }
 
     void FPSGameManager::SetMenuState(FPSMenuState state)
@@ -209,16 +223,33 @@ namespace Hargon
         m_LevelIndex = std::clamp(levelIndex, 1, 5);
         m_LevelCode = GetLevelCode(m_Campaign, m_LevelIndex);
 
-        std::string jsonPath = "assets/levels/" + m_LevelCode + ".json";
-        if (!std::filesystem::exists(jsonPath))
+        std::string relJson = "assets/levels/" + m_LevelCode + ".json";
+        std::vector<std::string> candidates = { relJson };
+        if (!m_ProjectRootDir.empty())
         {
-            if (std::filesystem::exists("../" + jsonPath))
-                jsonPath = "../" + jsonPath;
-            else
+            candidates.push_back((std::filesystem::path(m_ProjectRootDir) / relJson).string());
+            candidates.push_back((std::filesystem::path(m_ProjectRootDir) / "levels" / (m_LevelCode + ".json")).string());
+        }
+        candidates.push_back("../" + relJson);
+        candidates.push_back("../../" + relJson);
+        candidates.push_back("../../../" + relJson);
+
+        std::string jsonPath;
+        for (const auto& cand : candidates)
+        {
+            std::error_code ec;
+            if (std::filesystem::exists(cand, ec))
             {
-                Log::Error("BadLevel file not found: " + jsonPath);
-                return false;
+                jsonPath = cand;
+                break;
             }
+        }
+        if (jsonPath.empty())
+        {
+            if (m_Scene)
+                m_Scene->Clear();
+            Log::Error("BadLevel file not found: " + relJson);
+            return false;
         }
 
         std::ifstream in(jsonPath);

@@ -808,6 +808,8 @@ namespace Hargon
         if (m_RHI)
             m_RHI->WaitForIdle();
         m_CustomMeshes.clear();
+        m_Particles.clear();
+        m_TransientLines.clear();
     }
 
     void Renderer3D::AddLine(std::vector<LineVertex>& lines, const glm::vec3& a, const glm::vec3& b, const glm::vec4& color)

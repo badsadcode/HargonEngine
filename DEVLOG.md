@@ -199,6 +199,31 @@ When we finally printed out what that mysterious pink wall actually was, it turn
 
 ---
 
+## Chapter 8: The Door Sign That Lied (*"Opening Elder Slipgate... Sort Of"*)
+
+No good engine saga is complete without an embarrassingly honest bug report:
+
+> **"Loading project is not loading the project. Elder Slipgate is one of the examples."**
+
+And sure enough, when we actually tried launching **HargonEditor** the way a normal human does — straight from the finished `build\Release` folder — and asked it to load **Elder Slipgate**, Hargon put on a theatrical masterclass in polite deception:
+
+1. Because the app started inside the build folder instead of climbing upstairs to look for the main Hargon workshop, it couldn't find `c1m1` anywhere in the broom closet.
+2. Instead of stopping and admitting the cupboard was bare, the editor muttered a quiet error into the backstage log, hung a cheerful *"Now Open: Elder Slipgate!"* sign on the front door, and left the previous game's sunny floating islands sitting untouched in the living room.
+3. Even if you handed it a `.hproject` file directly on the command line, it politely smiled, tucked the note into its pocket unread, and booted into *Aether Realms* anyway.
+4. Worse still, switching between projects didn't always sweep the previous game's furniture out first — sky colors, countdown clocks, camera settings, and stray sparks lingered like guests who didn't catch the hint when the lights went on. And right in the middle of rewriting the switcher, we caught our own menu handing out a project's name badge *after* rearranging the coat rack it came from, briefly welcoming users to project **`'' []`**!
+
+> *"Ah, splendid!"* beamed **Uncle Wispr**, peering through his ear trumpet at a gothic shotgun sign hanging over bright blue clouds. *"I always said *Elder Slipgate* needed more coastal sea breeze and fewer wet chainsaws!"*
+
+So we gave project loading a proper front door and a broom:
+- **Workshop Finder**: Launch `HargonEditor`, `HargonRuntime`, or `ElderSlipgateFPS` from the build directory, a shortcut, or an exported game folder, and it now reliably figures out whether it's running inside a standalone package or needs to climb back up to your workspace root.
+- **Open Any `.hproject`, Anywhere**: Command-line arguments, desktop `.hproject` shortcuts, the new **`File -> Open Project (.hproject)...`** (`Ctrl+O`) native Windows file picker, the Project Manager's path bar, and even loading standalone `.hscene` files all route to the real project on disk.
+- **Clean Sweep & Honest Failure**: Switching projects now resets the scene, sky environment, Lua scripts, countdown timers, physics triggers, camera, particles, and script tabs cleanly — and if a project genuinely fails to load, the editor clears the viewport and puts an unmistakable red warning banner front and center instead of pretending yesterday's game is today's masterpiece.
+
+![HargonEditor properly opening Elder Slipgate directly with c1m1 dungeon hierarchy and shotgun viewport](docs/devlog/images/15_project_loading_elder_editor.png)
+*Opening Elder Slipgate now swaps the sign, the furniture, AND the dungeon: 112 c1m1 nodes in the Hierarchy, live corridors in the viewport, and zero leftover islands hiding behind the curtains.*
+
+---
+
 ## Honest Confessions & What's Missing (So Far)
 
 A devlog that pretends everything is finished forever is lying to you, so here is where things genuinely stand today:

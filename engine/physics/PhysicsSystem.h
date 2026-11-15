@@ -29,6 +29,13 @@ namespace Hargon
     {
     public:
         void Step(Scene& scene, float dt);
+        void Reset()
+        {
+            m_Collisions.clear();
+            m_TriggerEntered.clear();
+            m_TriggerExited.clear();
+            m_PrevTriggers.clear();
+        }
 
         // Godot RayCast3D continuous node evaluation
         static void UpdateRayCastNodes(Scene& scene);

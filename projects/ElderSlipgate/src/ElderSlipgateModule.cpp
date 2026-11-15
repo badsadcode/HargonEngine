@@ -20,7 +20,14 @@ namespace Hargon
             if (!ctx.scene || !ctx.renderer || !ctx.audio || !ctx.window)
                 return false;
 
-            m_FPSGame.Init(ctx.scene, ctx.renderer, ctx.audio, ctx.window, isPlayMode);
+            if (ctx.projectConfig)
+                m_FPSGame.SetProjectRootDir(ctx.projectConfig->projectRootDir);
+            else
+                m_FPSGame.SetProjectRootDir("");
+
+            if (!m_FPSGame.Init(ctx.scene, ctx.renderer, ctx.audio, ctx.window, isPlayMode))
+                return false;
+
             if (!isPlayMode)
             {
                 m_FPSGame.SetMenuState(FPSMenuState::None);

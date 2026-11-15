@@ -3,11 +3,147 @@
 #include "../core/Log.h"
 #include <filesystem>
 #include <algorithm>
+#include <cctype>
+#include <cstring>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <commdlg.h>
+#endif
 
 namespace Hargon
 {
+    namespace
+    {
+        bool IsWorkspaceRoot(const std::filesystem::path& dir)
+        {
+            std::error_code ec;
+            return std::filesystem::exists(dir / "engine", ec)
+                && std::filesystem::exists(dir / "assets", ec)
+                && (std::filesystem::exists(dir / "projects", ec) || std::filesystem::exists(dir / "CMakeLists.txt", ec));
+        }
+
+        bool IsStandaloneGameDir(const std::filesystem::path& dir)
+        {
+            std::error_code ec;
+            bool hasCfg = std::filesystem::exists(dir / "project.hproject", ec)
+                       || std::filesystem::exists(dir / "game.json", ec);
+            return hasCfg && !std::filesystem::exists(dir / "engine", ec);
+        }
+
+        std::filesystem::path GetExecutableDirectory(const char* argv0)
+        {
+#ifdef _WIN32
+            char exeBuf[MAX_PATH]{};
+            DWORD len = GetModuleFileNameA(nullptr, exeBuf, MAX_PATH);
+            if (len > 0 && len < MAX_PATH)
+            {
+                std::error_code ec;
+                return std::filesystem::path(exeBuf).parent_path().lexically_normal();
+            }
+#endif
+            if (argv0 && argv0[0] != '\0')
+            {
+                std::error_code ec;
+                auto p = std::filesystem::weakly_canonical(std::filesystem::path(argv0), ec);
+                if (!ec && p.has_parent_path())
+                    return p.parent_path();
+            }
+            return std::filesystem::current_path();
+        }
+
+        std::string TrimInput(std::string s)
+        {
+            while (!s.empty() && (std::isspace(static_cast<unsigned char>(s.front())) || s.front() == '"'))
+                s.erase(s.begin());
+            while (!s.empty() && (std::isspace(static_cast<unsigned char>(s.back())) || s.back() == '"'))
+                s.pop_back();
+            return s;
+        }
+
+        std::string ToLowerASCII(std::string s)
+        {
+            for (char& c : s)
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            return s;
+        }
+
+        void NormalizeLoadedProjectConfig(const std::filesystem::path& projectFilePath, GameProjectConfig& cfg)
+        {
+            std::error_code ec;
+            std::filesystem::path absFile = std::filesystem::weakly_canonical(projectFilePath, ec);
+            std::filesystem::path projDir = (!ec ? absFile : projectFilePath).parent_path().lexically_normal();
+            if (projDir.empty())
+                projDir = ".";
+
+            bool rootMissing = cfg.projectRootDir.empty() || cfg.projectRootDir == "."
+                || !std::filesystem::exists(cfg.projectRootDir, ec);
+            if (rootMissing)
+            {
+                cfg.projectRootDir = projDir.generic_string();
+            }
+            else
+            {
+                // Keep workspace-relative path clean if inside current working directory
+                std::filesystem::path cur = std::filesystem::current_path(ec);
+                std::filesystem::path storedAbs = std::filesystem::weakly_canonical(cfg.projectRootDir, ec);
+                if (!ec && storedAbs != projDir && std::filesystem::exists(projDir, ec))
+                    cfg.projectRootDir = projDir.generic_string();
+                (void)cur;
+            }
+        }
+    }
+
+    void ProjectManager::InitializeWorkingDirectory(const char* argv0)
+    {
+        std::error_code ec;
+        std::filesystem::path cwd = std::filesystem::current_path(ec);
+        if (ec)
+            return;
+
+        if (IsStandaloneGameDir(cwd))
+            return;
+
+        std::filesystem::path exeDir = GetExecutableDirectory(argv0);
+        if (!exeDir.empty() && IsStandaloneGameDir(exeDir))
+        {
+            std::filesystem::current_path(exeDir, ec);
+            if (!ec)
+                Log::Info("Resolved standalone game directory: " + exeDir.generic_string());
+            return;
+        }
+
+        auto findWorkspaceUpward = [&](std::filesystem::path start) -> std::filesystem::path {
+            for (int depth = 0; depth < 6 && !start.empty(); ++depth)
+            {
+                if (IsWorkspaceRoot(start))
+                    return start;
+                std::filesystem::path parent = start.parent_path();
+                if (parent == start)
+                    break;
+                start = parent;
+            }
+            return {};
+        };
+
+        std::filesystem::path root = findWorkspaceUpward(cwd);
+        if (root.empty() && !exeDir.empty())
+            root = findWorkspaceUpward(exeDir);
+
+        if (!root.empty() && std::filesystem::weakly_canonical(root, ec) != std::filesystem::weakly_canonical(cwd, ec))
+        {
+            std::filesystem::current_path(root, ec);
+            if (!ec)
+                Log::Info("Resolved Hargon workspace root: " + root.generic_string());
+        }
+    }
+
     void ProjectManager::EnsureBuiltInProjects()
     {
+        std::error_code ec;
+        if (!std::filesystem::exists("engine", ec) && !std::filesystem::exists("CMakeLists.txt", ec))
+            return;
+
         std::filesystem::create_directories("projects");
 
         // 1. Project 1: Elder Slipgate (Single-Player FPS + BadLevel)
@@ -104,21 +240,27 @@ namespace Hargon
 
     std::vector<GameProjectConfig> ProjectManager::DiscoverProjects(const std::string& rootDir)
     {
-        EnsureBuiltInProjects();
+        if (rootDir == "projects")
+            EnsureBuiltInProjects();
+
         std::vector<GameProjectConfig> list;
-        if (!std::filesystem::exists(rootDir))
+        std::error_code ec;
+        if (!std::filesystem::exists(rootDir, ec))
             return list;
 
-        for (const auto& entry : std::filesystem::directory_iterator(rootDir))
+        for (const auto& entry : std::filesystem::directory_iterator(rootDir, ec))
         {
             if (!entry.is_directory())
                 continue;
             std::filesystem::path pfile = entry.path() / "project.hproject";
-            if (std::filesystem::exists(pfile))
+            if (std::filesystem::exists(pfile, ec))
             {
                 GameProjectConfig cfg;
                 if (SceneSerializer::LoadProjectConfig(cfg, pfile.string()))
+                {
+                    NormalizeLoadedProjectConfig(pfile, cfg);
                     list.push_back(cfg);
+                }
             }
         }
 
@@ -126,6 +268,142 @@ namespace Hargon
             return a.projectName < b.projectName;
         });
         return list;
+    }
+
+    bool ProjectManager::LoadProjectFromInput(
+        const std::string& projectInput,
+        GameProjectConfig& outConfig,
+        std::string* outError)
+    {
+        std::string cleaned = TrimInput(projectInput);
+        if (cleaned.empty())
+        {
+            if (outError) *outError = "Project path or name is empty.";
+            return false;
+        }
+
+        std::error_code ec;
+        std::filesystem::path p(cleaned);
+
+        auto tryLoadFile = [&](const std::filesystem::path& filePath) -> bool {
+            GameProjectConfig cfg;
+            if (!SceneSerializer::LoadProjectConfig(cfg, filePath.string()))
+                return false;
+            NormalizeLoadedProjectConfig(filePath, cfg);
+            outConfig = cfg;
+            return true;
+        };
+
+        if (std::filesystem::is_regular_file(p, ec))
+        {
+            if (tryLoadFile(p))
+                return true;
+            if (outError) *outError = "Failed to parse project configuration: " + p.generic_string();
+            return false;
+        }
+
+        if (std::filesystem::is_directory(p, ec))
+        {
+            if (std::filesystem::exists(p / "project.hproject", ec) && tryLoadFile(p / "project.hproject"))
+                return true;
+            if (std::filesystem::exists(p / "game.json", ec) && tryLoadFile(p / "game.json"))
+                return true;
+            if (outError) *outError = "Directory does not contain project.hproject: " + p.generic_string();
+            return false;
+        }
+
+        std::filesystem::path workspaceProj = std::filesystem::path("projects") / cleaned / "project.hproject";
+        if (std::filesystem::exists(workspaceProj, ec) && tryLoadFile(workspaceProj))
+            return true;
+
+        auto discovered = DiscoverProjects("projects");
+        std::string targetLower = ToLowerASCII(cleaned);
+        for (const auto& cfg : discovered)
+        {
+            if (cfg.projectName == cleaned || ToLowerASCII(cfg.projectName) == targetLower || cfg.gameTitle == cleaned)
+            {
+                outConfig = cfg;
+                return true;
+            }
+        }
+
+        if (outError) *outError = "Project not found: '" + cleaned + "'";
+        return false;
+    }
+
+    std::string ProjectManager::ResolveProjectAssetPath(const GameProjectConfig& config, const std::string& assetPath)
+    {
+        std::string cleaned = TrimInput(assetPath);
+        if (cleaned.empty())
+            return "";
+
+        std::error_code ec;
+        std::filesystem::path p(cleaned);
+        if (std::filesystem::exists(p, ec))
+            return p.lexically_normal().generic_string();
+
+        std::vector<std::filesystem::path> candidates;
+        if (!config.projectRootDir.empty())
+        {
+            std::filesystem::path root(config.projectRootDir);
+            candidates.push_back(root / p);
+            candidates.push_back(root / "scenes" / p.filename());
+            candidates.push_back(root / "assets" / p);
+            candidates.push_back(root / "levels" / p.filename());
+        }
+        candidates.push_back(std::filesystem::path("..") / p);
+        candidates.push_back(std::filesystem::path("../..") / p);
+
+        for (const auto& cand : candidates)
+        {
+            if (std::filesystem::exists(cand, ec))
+                return cand.lexically_normal().generic_string();
+        }
+        return cleaned;
+    }
+
+    bool ProjectManager::BrowseForProjectFile(std::string& outFilePath)
+    {
+#ifdef _WIN32
+        char fileBuf[MAX_PATH * 2]{};
+        OPENFILENAMEA ofn{};
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFilter = "Hargon Project (*.hproject;*.json)\0*.hproject;*.json\0All Files (*.*)\0*.*\0";
+        ofn.lpstrFile = fileBuf;
+        ofn.nMaxFile = sizeof(fileBuf);
+        ofn.lpstrTitle = "Open Hargon Project (.hproject)";
+        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if (GetOpenFileNameA(&ofn))
+        {
+            outFilePath = std::filesystem::path(fileBuf).generic_string();
+            return true;
+        }
+#else
+        (void)outFilePath;
+#endif
+        return false;
+    }
+
+    bool ProjectManager::BrowseForSceneFile(std::string& outFilePath)
+    {
+#ifdef _WIN32
+        char fileBuf[MAX_PATH * 2]{};
+        OPENFILENAMEA ofn{};
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFilter = "Hargon Scene (*.hscene)\0*.hscene\0All Files (*.*)\0*.*\0";
+        ofn.lpstrFile = fileBuf;
+        ofn.nMaxFile = sizeof(fileBuf);
+        ofn.lpstrTitle = "Load Hargon Scene (.hscene)";
+        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if (GetOpenFileNameA(&ofn))
+        {
+            outFilePath = std::filesystem::path(fileBuf).generic_string();
+            return true;
+        }
+#else
+        (void)outFilePath;
+#endif
+        return false;
     }
 
     bool ProjectManager::CreateNewProject(

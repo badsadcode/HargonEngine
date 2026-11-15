@@ -11,6 +11,7 @@
 #include "../engine/scripting/ScriptEngine.h"
 #include "../engine/runtime/GameModule.h"
 #include "../engine/runtime/GameSystem.h"
+#include "../engine/animation/TweenSystem.h"
 #include <nvrhi/utils.h>
 
 #define GLFW_INCLUDE_NONE
@@ -20,15 +21,12 @@
 #include <chrono>
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 #include <memory>
 
 int main(int argc, char** argv)
 {
     Hargon::Log::Init();
-    // Standalone exports ship their own project.hproject; only seed workspace projects/ in dev checkouts.
-    const bool isStandaloneExport = std::filesystem::exists("project.hproject") || std::filesystem::exists("game.json");
-    if (!isStandaloneExport && std::filesystem::exists("engine"))
-        Hargon::ProjectManager::EnsureBuiltInProjects();
 
     std::string requestedProject;
     bool enableValidation = true;
@@ -54,29 +52,39 @@ int main(int argc, char** argv)
         {
             autoTest = true;
         }
+        else if (!arg.empty() && arg[0] != '-' && requestedProject.empty())
+        {
+            requestedProject = arg;
+        }
     }
-
-    Hargon::GameProjectConfig projectCfg;
-    bool loadedCfg = false;
 
     if (!requestedProject.empty())
     {
-        std::filesystem::path p(requestedProject);
-        if (std::filesystem::is_regular_file(p))
-            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, p.string());
-        else if (std::filesystem::is_directory(p) && std::filesystem::exists(p / "project.hproject"))
-            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, (p / "project.hproject").string());
-        else if (std::filesystem::exists(std::filesystem::path("projects") / requestedProject / "project.hproject"))
-            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(
-                projectCfg, (std::filesystem::path("projects") / requestedProject / "project.hproject").string());
+        std::error_code ec;
+        std::filesystem::path rp(requestedProject);
+        if (std::filesystem::exists(rp, ec))
+            requestedProject = std::filesystem::weakly_canonical(rp, ec).generic_string();
+    }
+
+    Hargon::ProjectManager::InitializeWorkingDirectory(argc > 0 ? argv[0] : nullptr);
+
+    Hargon::GameProjectConfig projectCfg;
+    bool loadedCfg = false;
+    std::string launcherError;
+
+    if (!requestedProject.empty())
+    {
+        loadedCfg = Hargon::ProjectManager::LoadProjectFromInput(requestedProject, projectCfg, &launcherError);
+        if (!loadedCfg)
+            Hargon::Log::Error(launcherError);
     }
     else if (std::filesystem::exists("project.hproject"))
     {
-        loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "project.hproject");
+        loadedCfg = Hargon::ProjectManager::LoadProjectFromInput("project.hproject", projectCfg, &launcherError);
     }
     else if (std::filesystem::exists("game.json"))
     {
-        loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "game.json");
+        loadedCfg = Hargon::ProjectManager::LoadProjectFromInput("game.json", projectCfg, &launcherError);
     }
 
     std::vector<Hargon::GameProjectConfig> availableProjects;
@@ -151,22 +159,41 @@ int main(int argc, char** argv)
 
     Hargon::CameraView gameCamera;
     std::unique_ptr<Hargon::IGameModule> activeModule;
+    std::string customProjectPath;
 
-    auto launchProject = [&](const Hargon::GameProjectConfig& cfg) {
+    auto launchProject = [&](const Hargon::GameProjectConfig& cfg) -> bool {
+        renderer.ClearCustomMeshes();
+        physics.Reset();
+        Hargon::TweenSystem::Get().Clear();
+        scene.Clear();
+        scripts.ResetForNewProject(scene);
+        scripts.SetProjectRootDir(cfg.projectRootDir);
+        gameCamera = Hargon::CameraView{};
+
         projectCfg = cfg;
         activeModule = Hargon::GameModuleRegistry::Get().CreateModule(projectCfg.gameplayModule);
         Hargon::GameModuleContext ctx{ &scene, &physics, &scripts, &audio, &renderer, &window, &projectCfg };
-        if (activeModule)
-            activeModule->OnProjectOpen(ctx, true, gameCamera);
+        bool opened = activeModule ? activeModule->OnProjectOpen(ctx, true, gameCamera) : false;
+        if (!opened)
+        {
+            scene.Clear();
+            launcherError = "Failed to load project '" + cfg.gameTitle + "' (Module: " + cfg.gameplayModule + "). Check Console logs.";
+            Hargon::Log::Error(launcherError);
+            inProjectLauncher = true;
+            return false;
+        }
+        launcherError.clear();
         inProjectLauncher = false;
         std::string newTitle = projectCfg.gameTitle + " [" + projectCfg.genre + "] — Powered by Hargon Engine";
         window.SetTitle(newTitle);
         Hargon::Log::Info("HargonRuntime launched project '" + projectCfg.gameTitle + "' (Module: " + projectCfg.gameplayModule + ")");
+        return true;
     };
 
     if (loadedCfg)
     {
-        launchProject(projectCfg);
+        if (!launchProject(projectCfg))
+            return 1;
     }
 
     nvrhi::CommandListHandle cmd = rhi.GetDevice()->createCommandList();
@@ -217,16 +244,17 @@ int main(int argc, char** argv)
         {
             float w = static_cast<float>(rhi.GetWidth());
             float h = static_cast<float>(rhi.GetHeight());
-            ImGui::SetNextWindowPos(ImVec2(w * 0.5f - 320.0f, h * 0.5f - 220.0f), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(640.0f, 440.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f - 340.0f, h * 0.5f - 255.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(680.0f, 510.0f), ImGuiCond_Always);
             if (ImGui::Begin("Hargon Engine Runtime — Select Game Project", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
             {
                 ImGui::TextColored(ImVec4(0.4f, 0.88f, 1.0f, 1.0f), "Available Game Projects (projects/)");
                 ImGui::Separator();
-                ImGui::BeginChild("LauncherProjects", ImVec2(0.0f, 320.0f), true);
-                for (const auto& proj : availableProjects)
+                ImGui::BeginChild("LauncherProjects", ImVec2(0.0f, 290.0f), true);
+                for (size_t i = 0; i < availableProjects.size(); ++i)
                 {
-                    ImGui::PushID(proj.projectName.c_str());
+                    const auto& proj = availableProjects[i];
+                    ImGui::PushID(static_cast<int>(i));
                     if (ImGui::Button("LAUNCH GAME", ImVec2(120.0f, 34.0f)))
                     {
                         launchProject(proj);
@@ -240,6 +268,34 @@ int main(int argc, char** argv)
                     ImGui::PopID();
                 }
                 ImGui::EndChild();
+
+                ImGui::Spacing();
+                char pathBuf[512]{};
+                std::strncpy(pathBuf, customProjectPath.c_str(), sizeof(pathBuf) - 1);
+                ImGui::SetNextItemWidth(415.0f);
+                if (ImGui::InputTextWithHint("##RuntimeProjPath", "Open .hproject path or folder...", pathBuf, sizeof(pathBuf)))
+                    customProjectPath = pathBuf;
+                ImGui::SameLine();
+                if (ImGui::Button("Browse...", ImVec2(95.0f, 0.0f)))
+                {
+                    std::string picked;
+                    if (Hargon::ProjectManager::BrowseForProjectFile(picked))
+                        customProjectPath = picked;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Launch Path", ImVec2(125.0f, 0.0f)))
+                {
+                    Hargon::GameProjectConfig customCfg;
+                    std::string err;
+                    if (Hargon::ProjectManager::LoadProjectFromInput(customProjectPath, customCfg, &err))
+                        launchProject(customCfg);
+                    else
+                        launcherError = err;
+                }
+
+                if (!launcherError.empty())
+                    ImGui::TextColored(ImVec4(1.0f, 0.38f, 0.38f, 1.0f), "%s", launcherError.c_str());
+
                 if (ImGui::Button("Exit Runtime", ImVec2(-1.0f, 32.0f)))
                     window.RequestClose();
             }

@@ -5,6 +5,7 @@
 #include "engine/renderer/ImGuiNVRHI.h"
 #include "engine/scene/Scene.h"
 #include "engine/scene/SceneSerializer.h"
+#include "engine/project/ProjectManager.h"
 #include "engine/runtime/GameModule.h"
 #include "engine/audio/AudioEngine.h"
 #include "FPSGameManager.h"
@@ -20,6 +21,7 @@
 int main(int argc, char** argv)
 {
     Hargon::Log::Init();
+    Hargon::ProjectManager::InitializeWorkingDirectory(argc > 0 ? argv[0] : nullptr);
 
     bool autoTest = false;
     bool enableValidation = true;
@@ -75,7 +77,12 @@ int main(int argc, char** argv)
 
     Hargon::Scene scene;
     Hargon::FPSGameManager fps;
-    fps.Init(&scene, &renderer, &audio, &window, true);
+    fps.SetProjectRootDir(cfg.projectRootDir);
+    if (!fps.Init(&scene, &renderer, &audio, &window, true))
+    {
+        Hargon::Log::Error("Failed to initialize Elder Slipgate campaign level!");
+        return 1;
+    }
 
     Hargon::CameraView cam;
     fps.UpdateFirstPersonCamera(cam, 0.0f);

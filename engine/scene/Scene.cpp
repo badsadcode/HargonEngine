@@ -1,4 +1,4 @@
-﻿#include "Scene.h"
+#include "Scene.h"
 #include "../core/Log.h"
 #include <algorithm>
 #include <cmath>
@@ -11,8 +11,21 @@ namespace Hargon
         m_Entities.clear();
         m_Entities.reserve(512);
         m_NextEntityID = 1;
+        m_SignalListeners.clear();
+        m_RecentSignals.clear();
+
+        sceneName = "Untitled 3D Scene";
+        skyZenithColor = glm::vec3(0.03f, 0.06f, 0.16f);
+        skyHorizonColor = glm::vec3(0.14f, 0.34f, 0.56f);
+        groundAmbientColor = glm::vec3(0.08f, 0.10f, 0.15f);
+        ambientIntensity = 0.55f;
+        fogDensity = 0.0045f;
+        arenaHalfSize = 36.0f;
+        worldEnv = WorldEnvironmentSettings{};
+
         score = 0;
         wave = 1;
+        maxWaves = 3;
         enemiesRemainingInWave = 0;
         enemiesKilled = 0;
         crystalsCollected = 0;
@@ -20,6 +33,15 @@ namespace Hargon
         gameOver = false;
         gameWon = false;
         restartRequested = false;
+
+        introBannerText = "ENTERING SCENE";
+        hudHealthLabel = "HEALTH";
+        hudShieldLabel = "SHIELD";
+        hudObjectiveLabel = "OBJECTIVE";
+        hudCollectibleLabel = "PICKUPS";
+        hudControlsText = "[W/S] Move   [A/D] Turn   [SPACE] Fire   [SHIFT] Boost   [R] Restart";
+        victoryText = "VICTORY!";
+        defeatText = "MISSION FAILED! PRESS [R] TO RESTART";
         hudBannerText = introBannerText;
         hudBannerTimer = 3.5f;
     }

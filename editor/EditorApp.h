@@ -42,7 +42,10 @@ namespace Hargon
         void Run();
         void Shutdown();
 
-        bool OpenProject(const GameProjectConfig& config);
+        bool OpenProject(GameProjectConfig config);
+        bool IsActiveProject(const GameProjectConfig& candidate) const;
+        bool OpenProjectByInput(const std::string& input, std::string* outError = nullptr);
+        void RefreshDiscoveredProjects();
 
     private:
         void UpdateEditorCamera(float dt);
@@ -119,11 +122,13 @@ namespace Hargon
         std::string m_ExportStatusMessage;
 
         bool m_ShowProjectManagerModal = false;
+        std::string m_OpenProjectPathInput;
         std::string m_NewProjectSlug = "ChronoCitadel";
         std::string m_NewProjectTitle = "Chrono Citadel: Time Weaver";
         std::string m_NewProjectGenre = "3D Action-Puzzle Adventure";
         int m_NewProjectTemplate = 1;
         bool m_NewProjectBadLevel = false;
+        bool m_ProjectModalError = false;
         std::string m_ProjectModalStatus;
 
         float m_TotalTime = 0.0f;

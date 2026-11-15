@@ -1,5 +1,7 @@
 #include "EditorApp.h"
 #include "../engine/core/Log.h"
+#include "../engine/project/ProjectManager.h"
+#include <filesystem>
 #include <string>
 #include <iostream>
 
@@ -43,7 +45,21 @@ int main(int argc, char** argv)
             initialProject = argv[++i];
             autoCreateTemplate = std::stoi(argv[++i]);
         }
+        else if (!arg.empty() && arg[0] != '-' && initialProject.empty())
+        {
+            initialProject = arg;
+        }
     }
+
+    if (!initialProject.empty() && autoCreateTemplate < 0)
+    {
+        std::error_code ec;
+        std::filesystem::path ip(initialProject);
+        if (std::filesystem::exists(ip, ec))
+            initialProject = std::filesystem::weakly_canonical(ip, ec).generic_string();
+    }
+
+    Hargon::ProjectManager::InitializeWorkingDirectory(argc > 0 ? argv[0] : nullptr);
 
     Hargon::EditorApp app;
     if (!app.Init(backend, enableValidation, autoTest, initialProject, autoCreateTemplate))

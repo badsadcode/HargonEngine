@@ -101,6 +101,7 @@ if(WIN32)
         dxgi
         d3dcompiler
         dxguid
+        comdlg32
     )
 elseif(UNIX)
     target_link_libraries(HargonEngine PUBLIC dl pthread m)

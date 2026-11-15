@@ -1,5 +1,6 @@
 #include "GameModule.h"
 #include "GameSystem.h"
+#include "../project/ProjectManager.h"
 #include "../project/SceneTemplates.h"
 #include "../world/BadLevelImporter.h"
 #include "../animation/TweenSystem.h"
@@ -25,22 +26,43 @@ namespace Hargon
             if (ctx.renderer)
                 ctx.renderer->ClearCustomMeshes();
 
-            const std::string& startup = ctx.projectConfig->startupScene;
-            bool loaded = false;
-            if (!startup.empty() && std::filesystem::exists(startup))
-            {
-                loaded = SceneSerializer::LoadFromFile(*ctx.scene, startup);
-            }
+            if (ctx.scripts)
+                ctx.scripts->SetProjectRootDir(ctx.projectConfig->projectRootDir);
 
-            if (!loaded)
+            const std::string& startup = ctx.projectConfig->startupScene;
+            std::string resolvedStartup = ProjectManager::ResolveProjectAssetPath(*ctx.projectConfig, startup);
+
+            bool loaded = false;
+            std::error_code ec;
+            if (!resolvedStartup.empty() && std::filesystem::exists(resolvedStartup, ec))
+            {
+                loaded = SceneSerializer::LoadFromFile(*ctx.scene, resolvedStartup);
+                if (!loaded)
+                {
+                    Log::Error("Project startup scene exists but failed to load: " + resolvedStartup);
+                    return false;
+                }
+            }
+            else if (startup.empty())
             {
                 SceneTemplates::BuildEmptyTemplateScene(*ctx.scene, ctx.projectConfig->gameTitle);
-                if (!startup.empty())
-                    SceneSerializer::SaveToFile(*ctx.scene, startup);
+                loaded = true;
+            }
+            else
+            {
+                SceneTemplates::BuildEmptyTemplateScene(*ctx.scene, ctx.projectConfig->gameTitle);
+                std::filesystem::path saveTarget = std::filesystem::path(startup);
+                if (!ctx.projectConfig->projectRootDir.empty() && saveTarget.is_relative()
+                    && startup.rfind("projects/", 0) != 0 && startup.rfind("projects\\", 0) != 0)
+                {
+                    saveTarget = std::filesystem::path(ctx.projectConfig->projectRootDir) / saveTarget;
+                }
+                SceneSerializer::SaveToFile(*ctx.scene, saveTarget.string());
+                loaded = true;
             }
 
             if (ctx.scripts)
-                ctx.scripts->ReloadAllScripts(*ctx.scene);
+                ctx.scripts->ResetForNewProject(*ctx.scene);
 
             m_HasSnapshot = false;
             m_SavedEditSnapshot.clear();
@@ -53,7 +75,7 @@ namespace Hargon
             {
                 ioCamera.position = glm::vec3(0.0f, 12.5f, -26.5f);
             }
-            return true;
+            return loaded;
         }
 
         void OnEnterPlayMode(const GameModuleContext& ctx, bool fromEditMode, CameraView& ioCamera) override
@@ -89,15 +111,18 @@ namespace Hargon
             if (ctx.scene->restartRequested)
             {
                 ctx.scene->restartRequested = false;
-                if (ctx.projectConfig && !ctx.projectConfig->startupScene.empty() && std::filesystem::exists(ctx.projectConfig->startupScene))
+                std::string resolvedStartup = ctx.projectConfig
+                    ? ProjectManager::ResolveProjectAssetPath(*ctx.projectConfig, ctx.projectConfig->startupScene)
+                    : "";
+                if (!resolvedStartup.empty() && std::filesystem::exists(resolvedStartup))
                 {
-                    SceneSerializer::LoadFromFile(*ctx.scene, ctx.projectConfig->startupScene);
+                    SceneSerializer::LoadFromFile(*ctx.scene, resolvedStartup);
                 }
                 else
                 {
                     SceneTemplates::BuildEmptyTemplateScene(*ctx.scene, ctx.projectConfig ? ctx.projectConfig->gameTitle : "Scene");
                 }
-                ctx.scripts->ReloadAllScripts(*ctx.scene);
+                ctx.scripts->ResetForNewProject(*ctx.scene);
             }
 
             GameSystem::UpdateGameCamera(*ctx.scene, ioCamera, dt);
@@ -126,7 +151,8 @@ namespace Hargon
                 if (ImGui::MenuItem("Import Procedural BadLevel Dungeon (c1m1.json)"))
                 {
                     std::string status;
-                    if (!BadLevelImporter::ImportJsonToScene("assets/levels/c1m1.json", *ctx.scene, 0.045f, 400, &status))
+                    std::string lvlPath = ProjectManager::ResolveProjectAssetPath(*ctx.projectConfig, "assets/levels/c1m1.json");
+                    if (!BadLevelImporter::ImportJsonToScene(lvlPath, *ctx.scene, 0.045f, 400, &status))
                         Log::Error(status);
                 }
                 if (ImGui::MenuItem("Generate Fresh BadLevel Map via Python (Seed 777)"))

@@ -33,6 +33,7 @@ namespace Hargon
     {
         m_AutoTestMode = autoTestMode;
         Log::Init();
+        ProjectManager::InitializeWorkingDirectory(nullptr);
         Log::Editor("Starting Hargon 3D Game Engine & General-Purpose Visual Editor...");
 
         WindowConfig winCfg;
@@ -80,19 +81,19 @@ namespace Hargon
         // Discover all game projects in projects/
         m_DiscoveredProjects = ProjectManager::DiscoverProjects("projects");
 
-        // Open requested CLI project if provided, or first general-purpose SceneAndLua project by default
+        // Open requested CLI project (slug, folder, or .hproject path), or first general-purpose SceneAndLua project by default
         GameProjectConfig initialProj;
         bool foundInitial = false;
         if (!initialProjectSlug.empty())
         {
-            for (const auto& p : m_DiscoveredProjects)
+            std::string loadErr;
+            if (ProjectManager::LoadProjectFromInput(initialProjectSlug, initialProj, &loadErr))
             {
-                if (p.projectName == initialProjectSlug)
-                {
-                    initialProj = p;
-                    foundInitial = true;
-                    break;
-                }
+                foundInitial = true;
+            }
+            else
+            {
+                Log::Error(loadErr);
             }
         }
         if (!foundInitial)
@@ -111,7 +112,6 @@ namespace Hargon
             initialProj = m_DiscoveredProjects.front();
 
         OpenProject(initialProj);
-        OpenLuaScriptInEditor(m_OpenScriptPath);
 
         Log::Editor("Hargon Visual Editor ready. Use the Project Manager or [Project] menu to create, open, switch, or configure projects.");
         return true;
@@ -122,21 +122,119 @@ namespace Hargon
         return GameModuleContext{ &m_Scene, &m_Physics, &m_Scripts, &m_Audio, &m_Renderer3D, &m_Window, &m_ProjectConfig };
     }
 
-    bool EditorApp::OpenProject(const GameProjectConfig& config)
+    void EditorApp::RefreshDiscoveredProjects()
+    {
+        auto workspace = ProjectManager::DiscoverProjects("projects");
+        // Keep currently loaded external project (if opened outside workspace projects/) in the switcher list
+        if (!m_ProjectConfig.projectRootDir.empty())
+        {
+            std::error_code ec;
+            auto curRoot = std::filesystem::weakly_canonical(m_ProjectConfig.projectRootDir, ec);
+            bool present = false;
+            for (const auto& p : workspace)
+            {
+                auto pRoot = std::filesystem::weakly_canonical(p.projectRootDir, ec);
+                if (!ec && pRoot == curRoot)
+                {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present && std::filesystem::exists(std::filesystem::path(m_ProjectConfig.projectRootDir) / "project.hproject", ec))
+                workspace.push_back(m_ProjectConfig);
+        }
+        m_DiscoveredProjects = std::move(workspace);
+    }
+
+    bool EditorApp::IsActiveProject(const GameProjectConfig& candidate) const
+    {
+        if (!candidate.projectRootDir.empty() && !m_ProjectConfig.projectRootDir.empty())
+        {
+            std::error_code ec1, ec2;
+            auto a = std::filesystem::weakly_canonical(candidate.projectRootDir, ec1);
+            auto b = std::filesystem::weakly_canonical(m_ProjectConfig.projectRootDir, ec2);
+            if (!ec1 && !ec2)
+                return a == b;
+            return candidate.projectRootDir == m_ProjectConfig.projectRootDir;
+        }
+        return candidate.projectName == m_ProjectConfig.projectName;
+    }
+
+    bool EditorApp::OpenProjectByInput(const std::string& input, std::string* outError)
+    {
+        GameProjectConfig cfg;
+        std::string err;
+        if (!ProjectManager::LoadProjectFromInput(input, cfg, &err))
+        {
+            m_ProjectModalError = true;
+            m_ProjectModalStatus = err;
+            Log::Error("Failed to locate project: " + err);
+            if (outError) *outError = err;
+            return false;
+        }
+        bool ok = OpenProject(cfg);
+        if (!ok && outError)
+            *outError = m_ProjectModalStatus;
+        return ok;
+    }
+
+    bool EditorApp::OpenProject(GameProjectConfig config)
     {
         StopPlayMode();
+        m_State = EditorState::Edit;
+        m_Window.ClearSimulatedKeys();
+        m_Window.SetCursorCaptured(false);
+
+        m_Renderer3D.ClearCustomMeshes();
+        m_Physics.Reset();
+        TweenSystem::Get().Clear();
+        m_Scene.Clear();
+        m_Scripts.ResetForNewProject(m_Scene);
+        m_Scripts.SetProjectRootDir(config.projectRootDir);
+
         m_ProjectConfig = config;
-        m_CurrentScenePath = config.startupScene;
+        std::string resolvedStartup = ProjectManager::ResolveProjectAssetPath(config, config.startupScene);
+        m_CurrentScenePath = resolvedStartup.empty() ? config.startupScene : resolvedStartup;
         m_ExportDirectory = "Exports/" + (config.projectName.empty() ? std::string("GameProject") : config.projectName);
         m_ExportStatusMessage.clear();
         m_UndoRedo.Clear();
+        m_SelectedEntity = kInvalidEntity;
+        m_HoveredGizmoAxis = -1;
+        m_DraggedGizmoAxis = -1;
+        m_HierarchyFilter.clear();
+
+        m_EditorCamera = CameraView{};
+        m_EditorCamYaw = 0.0f;
+        m_EditorCamPitch = 20.0f;
 
         m_GameModule = GameModuleRegistry::Get().CreateModule(config.gameplayModule);
         GameModuleContext ctx = BuildModuleContext();
 
+        bool opened = false;
         if (m_GameModule)
         {
-            m_GameModule->OnProjectOpen(ctx, false, m_EditorCamera);
+            opened = m_GameModule->OnProjectOpen(ctx, false, m_EditorCamera);
+        }
+        else
+        {
+            SceneTemplates::BuildEmptyTemplateScene(m_Scene, config.gameTitle);
+            opened = true;
+        }
+
+        if (!opened)
+        {
+            m_Scene.Clear();
+            m_DrawGrid = true;
+            m_SelectedEntity = kInvalidEntity;
+            m_ProjectModalError = true;
+            m_ProjectModalStatus = "Failed to load project '" + config.gameTitle + "' (Module: " + config.gameplayModule + "). See Console for details.";
+            m_Window.SetTitle("Hargon 3D Game Engine — [Load Failed: " + config.projectName + "]");
+            Log::Error(m_ProjectModalStatus);
+            return false;
+        }
+
+        if (m_GameModule)
+        {
             m_DrawGrid = m_GameModule->ShouldDrawEditorGrid();
 
             float prefYaw = 0.0f, prefPitch = 20.0f;
@@ -145,19 +243,13 @@ namespace Hargon
                 m_EditorCamYaw = prefYaw;
                 m_EditorCamPitch = prefPitch;
             }
-            else
-            {
-                m_EditorCamYaw = 0.0f;
-                m_EditorCamPitch = 20.0f;
-            }
             UpdateEditorCamera(0.0f);
             m_SelectedEntity = m_GameModule->PickDefaultSelectedEntity(ctx, m_EditorCamera);
         }
         else
         {
-            SceneTemplates::BuildEmptyTemplateScene(m_Scene, config.gameTitle);
             m_DrawGrid = true;
-            m_SelectedEntity = kInvalidEntity;
+            UpdateEditorCamera(0.0f);
         }
 
         if (Entity* sel = m_Scene.GetEntity(m_SelectedEntity))
@@ -169,6 +261,26 @@ namespace Hargon
             m_UndoRedo.AddUndoMethod([this, eid, origPos]() { if (Entity* ent = m_Scene.GetEntity(eid)) ent->transform.position = origPos; });
             m_UndoRedo.CommitAction(false);
         }
+
+        // Open first script referenced by the loaded scene in the Lua Script Editor
+        std::string firstScript = "assets/scripts/player_rover.lua";
+        for (const auto& e : m_Scene.GetEntities())
+        {
+            if (e.alive && !e.luaScript.scriptPath.empty())
+            {
+                firstScript = e.luaScript.scriptPath;
+                break;
+            }
+        }
+        OpenLuaScriptInEditor(firstScript);
+
+        RefreshDiscoveredProjects();
+        m_ProjectModalError = false;
+        m_ProjectModalStatus = "Opened project '" + config.gameTitle + "'.";
+        m_OpenProjectPathInput = m_ProjectConfig.projectRootDir.empty()
+            ? ""
+            : (m_ProjectConfig.projectRootDir + "/project.hproject");
+        m_Window.SetTitle("Hargon 3D Game Engine — " + config.gameTitle + " [" + config.projectName + "]");
 
         Log::Editor("Opened project '" + config.gameTitle + "' [" + config.genre + "] (Module: " + config.gameplayModule + ")");
         return true;
@@ -190,8 +302,9 @@ namespace Hargon
 
     void EditorApp::OpenLuaScriptInEditor(const std::string& path)
     {
-        m_OpenScriptPath = path;
-        std::ifstream in(path);
+        std::string resolved = ProjectManager::ResolveProjectAssetPath(m_ProjectConfig, path);
+        m_OpenScriptPath = resolved.empty() ? path : resolved;
+        std::ifstream in(m_OpenScriptPath);
         if (in)
         {
             std::ostringstream ss;
@@ -200,7 +313,7 @@ namespace Hargon
         }
         else
         {
-            m_ScriptEditorBuffer = "-- Script file: " + path + "\nfunction on_init(id)\nend\n\nfunction on_update(id, dt)\nend\n";
+            m_ScriptEditorBuffer = "-- Script file: " + m_OpenScriptPath + "\nfunction on_init(id)\nend\n\nfunction on_update(id, dt)\nend\n";
         }
     }
 
@@ -296,6 +409,16 @@ namespace Hargon
         if (!ImGui::GetIO().WantTextInput && !m_Window.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))
         {
             bool ctrlDown = m_Window.IsKeyDown(GLFW_KEY_LEFT_CONTROL) || m_Window.IsKeyDown(GLFW_KEY_RIGHT_CONTROL);
+            if (ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_O))
+            {
+                std::string pickedPath;
+                if (ProjectManager::BrowseForProjectFile(pickedPath) && !OpenProjectByInput(pickedPath))
+                    m_ShowProjectManagerModal = true;
+            }
+            if (ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_S) && !m_CurrentScenePath.empty())
+                SceneSerializer::SaveToFile(m_Scene, m_CurrentScenePath);
+            if (ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_E))
+                m_ShowExportModal = true;
             if (ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_Z)) m_UndoRedo.Undo();
             if (ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_Y)) m_UndoRedo.Redo();
             if (!ctrlDown && m_Window.IsKeyPressed(GLFW_KEY_W)) m_GizmoMode = GizmoMode::Translate;
@@ -463,14 +586,19 @@ namespace Hargon
                 {
                     StopPlayMode();
                     std::string firstProj = m_ProjectConfig.projectName;
+                    GameProjectConfig nextProj;
+                    bool foundNext = false;
                     for (const auto& p : m_DiscoveredProjects)
                     {
                         if (p.projectName != firstProj)
                         {
-                            OpenProject(p);
+                            nextProj = p;
+                            foundNext = true;
                             break;
                         }
                     }
+                    if (foundNext)
+                        OpenProject(nextProj);
                     GameSystem::ExportStandaloneGame(m_Scene, m_ProjectConfig, "Exports/" + m_ProjectConfig.projectName, m_ExportStatusMessage);
                 }
                 else if (m_FrameCounter >= 68)
@@ -568,22 +696,42 @@ namespace Hargon
         {
             if (ImGui::BeginMenu("Project"))
             {
+                if (ImGui::IsWindowAppearing())
+                    RefreshDiscoveredProjects();
+
+                if (ImGui::MenuItem("Open Project File (.hproject)...", "Ctrl+O"))
+                {
+                    std::string pickedPath;
+                    if (ProjectManager::BrowseForProjectFile(pickedPath))
+                    {
+                        if (!OpenProjectByInput(pickedPath))
+                            m_ShowProjectManagerModal = true;
+                    }
+                }
                 if (ImGui::MenuItem("Project Manager (New / Open / Switch Project)..."))
                 {
-                    m_DiscoveredProjects = ProjectManager::DiscoverProjects("projects");
+                    RefreshDiscoveredProjects();
                     m_ShowProjectManagerModal = true;
                 }
                 ImGui::Separator();
                 ImGui::TextColored(ImVec4(0.45f, 0.88f, 1.0f, 1.0f), "Switch Active Project:");
-                for (const auto& proj : m_DiscoveredProjects)
+                GameProjectConfig pendingMenuOpen;
+                bool hasPendingMenuOpen = false;
+                for (size_t i = 0; i < m_DiscoveredProjects.size(); ++i)
                 {
-                    bool isCur = (proj.projectName == m_ProjectConfig.projectName);
+                    const auto& proj = m_DiscoveredProjects[i];
+                    ImGui::PushID(static_cast<int>(i));
+                    bool isCur = IsActiveProject(proj);
                     std::string itemLabel = proj.gameTitle + " [" + proj.genre + "]";
                     if (ImGui::MenuItem(itemLabel.c_str(), nullptr, isCur))
                     {
-                        OpenProject(proj);
+                        pendingMenuOpen = proj;
+                        hasPendingMenuOpen = true;
                     }
+                    ImGui::PopID();
                 }
+                if (hasPendingMenuOpen)
+                    OpenProject(pendingMenuOpen);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Save Project Configuration (project.hproject)") && !m_ProjectConfig.projectRootDir.empty())
                 {
@@ -598,6 +746,16 @@ namespace Hargon
 
             if (ImGui::BeginMenu("File"))
             {
+                if (ImGui::MenuItem("Open Project (.hproject)...", "Ctrl+O"))
+                {
+                    std::string pickedPath;
+                    if (ProjectManager::BrowseForProjectFile(pickedPath))
+                    {
+                        if (!OpenProjectByInput(pickedPath))
+                            m_ShowProjectManagerModal = true;
+                    }
+                }
+                ImGui::Separator();
                 if (ImGui::MenuItem("New Empty 3D Scene"))
                 {
                     StopPlayMode();
@@ -623,10 +781,36 @@ namespace Hargon
                 {
                     SceneSerializer::SaveToFile(m_Scene, m_CurrentScenePath);
                 }
-                if (ImGui::MenuItem("Load Scene"))
+                if (ImGui::MenuItem("Load Scene File (.hscene)..."))
+                {
+                    std::string scenePath;
+                    if (ProjectManager::BrowseForSceneFile(scenePath))
+                    {
+                        StopPlayMode();
+                        m_Renderer3D.ClearCustomMeshes();
+                        m_Physics.Reset();
+                        TweenSystem::Get().Clear();
+                        if (SceneSerializer::LoadFromFile(m_Scene, scenePath))
+                        {
+                            m_CurrentScenePath = scenePath;
+                            m_Scripts.ResetForNewProject(m_Scene);
+                            m_SelectedEntity = kInvalidEntity;
+                        }
+                    }
+                }
+                if (ImGui::MenuItem("Reload Startup Scene"))
                 {
                     StopPlayMode();
-                    SceneSerializer::LoadFromFile(m_Scene, m_CurrentScenePath);
+                    std::string resolved = ProjectManager::ResolveProjectAssetPath(m_ProjectConfig, m_CurrentScenePath);
+                    if (!resolved.empty() && std::filesystem::exists(resolved))
+                    {
+                        if (SceneSerializer::LoadFromFile(m_Scene, resolved))
+                            m_Scripts.ResetForNewProject(m_Scene);
+                    }
+                    else
+                    {
+                        OpenProject(m_ProjectConfig);
+                    }
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Save Editor Screenshot (BMP)"))
@@ -755,19 +939,42 @@ namespace Hargon
         if (ImGui::Begin("##MainToolbar", nullptr, flags))
         {
             // Active Project Quick-Switcher
-            ImGui::SetNextItemWidth(175.0f);
+            ImGui::SetNextItemWidth(205.0f);
             if (ImGui::BeginCombo("##ActiveProjectCombo", ("Project: " + m_ProjectConfig.projectName).c_str()))
             {
-                for (const auto& proj : m_DiscoveredProjects)
+                if (ImGui::IsWindowAppearing())
+                    RefreshDiscoveredProjects();
+
+                GameProjectConfig pendingComboOpen;
+                bool hasPendingComboOpen = false;
+                for (size_t i = 0; i < m_DiscoveredProjects.size(); ++i)
                 {
-                    bool isSel = (proj.projectName == m_ProjectConfig.projectName);
+                    const auto& proj = m_DiscoveredProjects[i];
+                    ImGui::PushID(static_cast<int>(i));
+                    bool isSel = IsActiveProject(proj);
                     std::string lbl = proj.projectName + " (" + proj.genre + ")";
                     if (ImGui::Selectable(lbl.c_str(), isSel))
-                        OpenProject(proj);
+                    {
+                        pendingComboOpen = proj;
+                        hasPendingComboOpen = true;
+                    }
+                    ImGui::PopID();
                 }
+                if (hasPendingComboOpen)
+                    OpenProject(pendingComboOpen);
                 ImGui::Separator();
+                if (ImGui::Selectable("Open Project File (.hproject)..."))
+                {
+                    std::string pickedPath;
+                    if (ProjectManager::BrowseForProjectFile(pickedPath))
+                    {
+                        if (!OpenProjectByInput(pickedPath))
+                            m_ShowProjectManagerModal = true;
+                    }
+                }
                 if (ImGui::Selectable("+ New / Manage Projects..."))
                 {
+                    RefreshDiscoveredProjects();
                     m_ShowProjectManagerModal = true;
                 }
                 ImGui::EndCombo();
@@ -840,7 +1047,7 @@ namespace Hargon
             ImGui::SameLine();
             if (ImGui::Button("Projects...", ImVec2(90.0f, 28.0f)))
             {
-                m_DiscoveredProjects = ProjectManager::DiscoverProjects("projects");
+                RefreshDiscoveredProjects();
                 m_ShowProjectManagerModal = true;
             }
 
@@ -998,6 +1205,14 @@ namespace Hargon
                 dl->AddText(ImVec2(p0.x + 10.0f, p0.y + 6.0f), IM_COL32(130, 225, 255, 255), info1);
                 dl->AddText(ImVec2(p0.x + 10.0f, p0.y + 25.0f), IM_COL32(200, 215, 230, 230),
                     "[LMB] Pick/Gizmo   [RMB+WASD] Fly Cam   [Project Combo] Switch Game Project");
+
+                if (m_ProjectModalError && !m_ProjectModalStatus.empty())
+                {
+                    ImVec2 ep0(p0.x, p0.y + 54.0f);
+                    dl->AddRectFilled(ep0, ImVec2(ep0.x + 560.0f, ep0.y + 30.0f), IM_COL32(60, 12, 16, 225), 5.0f);
+                    dl->AddRect(ep0, ImVec2(ep0.x + 560.0f, ep0.y + 30.0f), IM_COL32(240, 80, 80, 220), 5.0f);
+                    dl->AddText(ImVec2(ep0.x + 10.0f, ep0.y + 8.0f), IM_COL32(255, 160, 160, 255), m_ProjectModalStatus.c_str());
+                }
             }
         }
         ImGui::End();
@@ -1248,17 +1463,37 @@ namespace Hargon
                 {
                     ImGui::Columns(3, "ProjCols", true);
                     ImGui::TextColored(ImVec4(0.45f, 0.88f, 1.0f, 1.0f), "Independent Game Projects (projects/)");
-                    for (const auto& proj : m_DiscoveredProjects)
+                    ImGui::BeginChild("BottomProjList", ImVec2(0.0f, -32.0f), false);
+                    GameProjectConfig pendingBottomOpen;
+                    bool hasPendingBottomOpen = false;
+                    for (size_t i = 0; i < m_DiscoveredProjects.size(); ++i)
                     {
-                        bool isCur = (proj.projectName == m_ProjectConfig.projectName);
+                        const auto& proj = m_DiscoveredProjects[i];
+                        ImGui::PushID(static_cast<int>(i));
+                        bool isCur = IsActiveProject(proj);
                         std::string lbl = (isCur ? ">> [ACTIVE] " : "   ") + proj.gameTitle + " (" + proj.genre + ")";
                         if (ImGui::Selectable(lbl.c_str(), isCur))
                         {
-                            OpenProject(proj);
+                            pendingBottomOpen = proj;
+                            hasPendingBottomOpen = true;
                         }
+                        ImGui::PopID();
                     }
-                    if (ImGui::Button("+ Create / Manage Game Projects..."))
+                    ImGui::EndChild();
+                    if (hasPendingBottomOpen)
+                        OpenProject(pendingBottomOpen);
+                    if (ImGui::Button("Open .hproject..."))
+                    {
+                        std::string pickedPath;
+                        if (ProjectManager::BrowseForProjectFile(pickedPath) && !OpenProjectByInput(pickedPath))
+                            m_ShowProjectManagerModal = true;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("+ Manage Projects..."))
+                    {
+                        RefreshDiscoveredProjects();
                         m_ShowProjectManagerModal = true;
+                    }
                     ImGui::NextColumn();
 
                     ImGui::TextColored(ImVec4(0.95f, 0.80f, 0.35f, 1.0f), "Active Project Configuration");
@@ -1290,21 +1525,35 @@ namespace Hargon
                 // Tab 2: Built-in Lua Script Editor
                 if (ImGui::BeginTabItem("Lua Script Editor (Hot-Reload)"))
                 {
-                    const char* scriptFiles[] = {
-                        "assets/scripts/player_rover.lua",
-                        "assets/scripts/enemy_drone.lua",
-                        "assets/scripts/crystal_pickup.lua",
-                        "assets/scripts/defense_turret.lua",
-                        "assets/scripts/core_reactor.lua"
+                    std::vector<std::string> scriptFiles;
+                    auto addUniqueScript = [&](const std::string& p) {
+                        if (p.empty()) return;
+                        if (std::find(scriptFiles.begin(), scriptFiles.end(), p) == scriptFiles.end())
+                            scriptFiles.push_back(p);
                     };
-                    for (int i = 0; i < 5; ++i)
+                    for (const auto& ent : m_Scene.GetEntities())
+                    {
+                        if (ent.alive && !ent.luaScript.scriptPath.empty())
+                            addUniqueScript(ent.luaScript.scriptPath);
+                    }
+                    addUniqueScript("assets/scripts/player_rover.lua");
+                    addUniqueScript("assets/scripts/skyway_runner.lua");
+                    addUniqueScript("assets/scripts/enemy_drone.lua");
+                    addUniqueScript("assets/scripts/crystal_pickup.lua");
+                    addUniqueScript("assets/scripts/defense_turret.lua");
+                    addUniqueScript("assets/scripts/core_reactor.lua");
+
+                    for (size_t i = 0; i < scriptFiles.size() && i < 6; ++i)
                     {
                         if (i > 0) ImGui::SameLine();
-                        bool active = (m_OpenScriptPath == scriptFiles[i]);
+                        std::string resolvedBtn = ProjectManager::ResolveProjectAssetPath(m_ProjectConfig, scriptFiles[i]);
+                        bool active = (m_OpenScriptPath == resolvedBtn || m_OpenScriptPath == scriptFiles[i]);
                         if (active) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.55f, 0.85f, 1.0f));
                         std::string fname = std::filesystem::path(scriptFiles[i]).filename().string();
+                        ImGui::PushID(static_cast<int>(i));
                         if (ImGui::Button(fname.c_str()))
                             OpenLuaScriptInEditor(scriptFiles[i]);
+                        ImGui::PopID();
                         if (active) ImGui::PopStyleColor();
                     }
 
@@ -1498,34 +1747,68 @@ namespace Hargon
         if (!m_ShowProjectManagerModal)
             return;
 
-        ImGui::SetNextWindowSize(ImVec2(680.0f, 475.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(720.0f, 540.0f), ImGuiCond_Always);
         ImGui::SetNextWindowPos(
-            ImVec2(m_Window.GetWidth() * 0.5f - 340.0f, m_Window.GetHeight() * 0.5f - 237.0f),
+            ImVec2(m_Window.GetWidth() * 0.5f - 360.0f, m_Window.GetHeight() * 0.5f - 270.0f),
             ImGuiCond_Appearing);
 
         if (ImGui::Begin("Hargon Engine — Project Manager (Create / Open / Configure Projects)", &m_ShowProjectManagerModal, ImGuiWindowFlags_NoResize))
         {
-            ImGui::TextColored(ImVec4(0.40f, 0.88f, 1.0f, 1.0f), "1. Existing Game Projects in Workspace (projects/)");
-            ImGui::BeginChild("ExistingProjectsList", ImVec2(0.0f, 165.0f), true);
-            for (const auto& proj : m_DiscoveredProjects)
+            ImGui::TextColored(ImVec4(0.40f, 0.88f, 1.0f, 1.0f), "1. Workspace Projects (projects/)");
+            ImGui::BeginChild("ExistingProjectsList", ImVec2(0.0f, 155.0f), true);
+            GameProjectConfig pendingModalOpen;
+            bool hasPendingModalOpen = false;
+            for (size_t i = 0; i < m_DiscoveredProjects.size(); ++i)
             {
-                ImGui::PushID(proj.projectName.c_str());
-                bool isCur = (proj.projectName == m_ProjectConfig.projectName);
-                if (ImGui::Button(isCur ? "Active" : "Open Project", ImVec2(105.0f, 0.0f)))
+                const auto& proj = m_DiscoveredProjects[i];
+                ImGui::PushID(static_cast<int>(i));
+                bool isCur = IsActiveProject(proj);
+                if (ImGui::Button(isCur ? "Reload" : "Open Project", ImVec2(105.0f, 0.0f)))
                 {
-                    OpenProject(proj);
-                    m_ShowProjectManagerModal = false;
+                    pendingModalOpen = proj;
+                    hasPendingModalOpen = true;
                 }
                 ImGui::SameLine();
-                ImGui::TextColored(isCur ? ImVec4(0.35f, 1.0f, 0.55f, 1.0f) : ImVec4(0.92f, 0.94f, 0.98f, 1.0f),
-                    "%s  —  [%s]  (Module: %s)",
-                    proj.gameTitle.c_str(), proj.genre.c_str(), proj.gameplayModule.c_str());
+                std::string rowLbl = proj.gameTitle + "  —  [" + proj.genre + "]  (Module: " + proj.gameplayModule + ")";
+                ImGui::PushStyleColor(ImGuiCol_Text, isCur ? ImVec4(0.35f, 1.0f, 0.55f, 1.0f) : ImVec4(0.92f, 0.94f, 0.98f, 1.0f));
+                if (ImGui::Selectable(rowLbl.c_str(), isCur, ImGuiSelectableFlags_AllowDoubleClick))
+                {
+                    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || !isCur)
+                    {
+                        pendingModalOpen = proj;
+                        hasPendingModalOpen = true;
+                    }
+                }
+                ImGui::PopStyleColor();
                 ImGui::PopID();
             }
             ImGui::EndChild();
+            if (hasPendingModalOpen && OpenProject(pendingModalOpen))
+                m_ShowProjectManagerModal = false;
+
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(0.55f, 0.90f, 1.0f, 1.0f), "2. Open Any Project (.hproject) by Path or File Browser");
+            char openBuf[512]{};
+            std::strncpy(openBuf, m_OpenProjectPathInput.c_str(), sizeof(openBuf) - 1);
+            ImGui::SetNextItemWidth(450.0f);
+            if (ImGui::InputTextWithHint("##OpenProjectPath", "projects/ElderSlipgate/project.hproject or folder...", openBuf, sizeof(openBuf)))
+                m_OpenProjectPathInput = openBuf;
+            ImGui::SameLine();
+            if (ImGui::Button("Browse...", ImVec2(95.0f, 0.0f)))
+            {
+                std::string picked;
+                if (ProjectManager::BrowseForProjectFile(picked))
+                    m_OpenProjectPathInput = picked;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Open Path", ImVec2(115.0f, 0.0f)))
+            {
+                if (OpenProjectByInput(m_OpenProjectPathInput))
+                    m_ShowProjectManagerModal = false;
+            }
 
             ImGui::Separator();
-            ImGui::TextColored(ImVec4(0.95f, 0.80f, 0.35f, 1.0f), "2. Create a Brand-New Game Project");
+            ImGui::TextColored(ImVec4(0.95f, 0.80f, 0.35f, 1.0f), "3. Create a Brand-New Game Project");
 
             char slugBuf[128]{};
             std::strncpy(slugBuf, m_NewProjectSlug.c_str(), sizeof(slugBuf) - 1);
@@ -1560,15 +1843,22 @@ namespace Hargon
                     m_NewProjectSlug, m_NewProjectTitle, m_NewProjectGenre,
                     m_NewProjectTemplate, m_NewProjectBadLevel, newCfg, &m_ProjectModalStatus))
                 {
-                    m_DiscoveredProjects = ProjectManager::DiscoverProjects("projects");
-                    OpenProject(newCfg);
+                    RefreshDiscoveredProjects();
+                    if (OpenProject(newCfg))
+                        m_ShowProjectManagerModal = false;
+                }
+                else
+                {
+                    m_ProjectModalError = true;
                 }
             }
             ImGui::PopStyleColor();
 
             if (!m_ProjectModalStatus.empty())
             {
-                ImGui::TextColored(ImVec4(0.45f, 0.95f, 0.65f, 1.0f), "%s", m_ProjectModalStatus.c_str());
+                ImGui::TextColored(
+                    m_ProjectModalError ? ImVec4(1.0f, 0.38f, 0.38f, 1.0f) : ImVec4(0.45f, 0.95f, 0.65f, 1.0f),
+                    "%s", m_ProjectModalStatus.c_str());
             }
         }
         ImGui::End();
