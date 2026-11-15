@@ -1,0 +1,16 @@
+{
+  "author": "Hargon Creator",
+  "enableBadLevel": false,
+  "executableName": "SkywayTrial.exe",
+  "gameTitle": "Skyway Trial: Horizon Leap",
+  "gameplayModule": "SceneAndLua",
+  "genre": "3D Gravity Platformer & Time-Trial",
+  "maxWaves": 3,
+  "preferredBackend": "Vulkan",
+  "projectName": "SkywayTrial",
+  "projectRootDir": "projects/SkywayTrial",
+  "startupScene": "projects/SkywayTrial/scenes/SkywayTrial_main.hscene",
+  "version": "0.1.0",
+  "windowHeight": 850,
+  "windowWidth": 1440
+}

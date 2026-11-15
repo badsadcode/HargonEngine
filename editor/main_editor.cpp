@@ -8,6 +8,8 @@ int main(int argc, char** argv)
     Hargon::GraphicsBackend backend = Hargon::GraphicsBackend::Vulkan;
     bool enableValidation = true;
     bool autoTest = false;
+    std::string initialProject;
+    int autoCreateTemplate = -1;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -32,10 +34,19 @@ int main(int argc, char** argv)
         {
             autoTest = true;
         }
+        else if (arg == "--project" && i + 1 < argc)
+        {
+            initialProject = argv[++i];
+        }
+        else if (arg == "--create-project" && i + 2 < argc)
+        {
+            initialProject = argv[++i];
+            autoCreateTemplate = std::stoi(argv[++i]);
+        }
     }
 
     Hargon::EditorApp app;
-    if (!app.Init(backend, enableValidation, autoTest))
+    if (!app.Init(backend, enableValidation, autoTest, initialProject, autoCreateTemplate))
     {
         std::cerr << "Failed to initialize Hargon EditorApp!\n";
         return 1;

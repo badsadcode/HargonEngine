@@ -705,26 +705,27 @@ namespace Hargon
         scene.worldEnv.glowBloom = 0.22f;
         scene.worldEnv.fogSunScatter = 0.40f;
 
-        scene.introBannerText = "COLLECT ALL 6 SOLAR BEACONS ACROSS THE OBSTACLE COURSE!";
+        scene.introBannerText = "LEAP THE SKYWAY PLATFORMS & COLLECT ALL 6 SOLAR BEACONS!";
         scene.hudBannerText = scene.introBannerText;
         scene.hudHealthLabel = "STAMINA";
-        scene.hudShieldLabel = "BOOST METER";
-        scene.hudObjectiveLabel = "FINISH ARCH";
+        scene.hudShieldLabel = "ENERGY";
+        scene.hudObjectiveLabel = "TIME TRIAL";
         scene.hudCollectibleLabel = "BEACONS";
-        scene.hudControlsText = "[W/S] Move   [A/D] Steer   [SHIFT] Turbo Boost   [SPACE] Pulse   [R] Restart";
+        scene.hudControlsText = "[W/S] Accelerate/Brake   [A/D] Steer   [SPACE] Jump Platforms   [SHIFT] Boost   [R] Restart";
         scene.victoryText = "COURSE COMPLETE! ALL SKYWAY BEACONS COLLECTED!";
-        scene.defeatText = "FELL OFF COURSE! PRESS [R] TO RETRY";
+        scene.defeatText = "FELL INTO CLOUD SEA! PRESS [R] TO RETRY";
         scene.hudBannerTimer = 4.5f;
 
         {
             Entity& sun = scene.CreateEntity("SunsetSun", "Light");
-            sun.transform.position = glm::vec3(15.0f, 32.0f, -25.0f);
-            sun.transform.rotation = glm::vec3(38.0f, -25.0f, 0.0f);
+            sun.transform.position = glm::vec3(15.0f, 34.0f, -25.0f);
+            sun.transform.rotation = glm::vec3(42.0f, -28.0f, 0.0f);
             sun.mesh.enabled = false;
             sun.light.enabled = true;
             sun.light.isDirectional = true;
-            sun.light.color = glm::vec3(1.0f, 0.88f, 0.72f);
-            sun.light.intensity = 3.1f;
+            sun.light.castShadows = true;
+            sun.light.color = glm::vec3(1.0f, 0.90f, 0.74f);
+            sun.light.intensity = 3.2f;
         }
 
         {
@@ -736,18 +737,19 @@ namespace Hargon
             cam.camera.mode = CameraMode::ThirdPersonOrbit;
             cam.camera.fov = 64.0f;
             cam.camera.followOffset = glm::vec3(0.0f, 7.5f, -12.0f);
-            cam.camera.followLookOffset = glm::vec3(0.0f, 1.5f, 4.0f);
-            cam.camera.springArmLength = 12.0f;
-            cam.camera.orbitPitch = 21.0f;
+            cam.camera.followLookOffset = glm::vec3(0.0f, 1.4f, 4.0f);
+            cam.camera.springArmLength = 12.5f;
+            cam.camera.orbitPitch = 20.0f;
             cam.camera.smoothSpeed = 10.0f;
         }
 
-        // Long sunlit skyway course segments
+        // Stepped sunlit skyway course platforms (with vertical tiers for 3D jumping & shadow casting)
         struct TrackSeg { const char* name; glm::vec3 pos; glm::vec3 scale; glm::vec4 col; int pat; };
         TrackSeg segs[] = {
-            { "CourseDeck_Start",  {  0.0f, -0.5f, -12.0f }, { 14.0f, 1.0f, 22.0f }, { 0.22f, 0.30f, 0.44f, 1.0f }, 1 },
-            { "CourseDeck_Mid",    {  0.0f, -0.5f,  12.0f }, { 18.0f, 1.0f, 26.0f }, { 0.25f, 0.34f, 0.48f, 1.0f }, 1 },
-            { "CourseDeck_Finish", {  0.0f, -0.5f,  36.0f }, { 16.0f, 1.0f, 18.0f }, { 0.28f, 0.42f, 0.46f, 1.0f }, 2 }
+            { "CourseDeck_Start",  {  0.0f, -0.5f, -13.0f }, { 14.0f, 1.0f, 18.0f }, { 0.22f, 0.31f, 0.46f, 1.0f }, 1 },
+            { "CourseDeck_Step1",  {  0.0f,  0.4f,   3.0f }, { 11.0f, 1.0f, 11.0f }, { 0.25f, 0.36f, 0.50f, 1.0f }, 1 },
+            { "CourseDeck_Step2",  {  0.0f,  1.2f,  16.5f }, { 12.0f, 1.0f, 12.0f }, { 0.26f, 0.40f, 0.52f, 1.0f }, 1 },
+            { "CourseDeck_Finish", {  0.0f,  1.9f,  31.0f }, { 15.0f, 1.0f, 14.0f }, { 0.24f, 0.46f, 0.46f, 1.0f }, 2 }
         };
         for (const auto& seg : segs)
         {
@@ -758,7 +760,7 @@ namespace Hargon
             deck.mesh.primitive = MeshPrimitive::Cube;
             deck.material.albedoColor = seg.col;
             deck.material.metallic = 0.25f;
-            deck.material.roughness = 0.45f;
+            deck.material.roughness = 0.42f;
             deck.material.patternType = seg.pat;
             deck.material.uvScale = 2.0f;
             deck.collider.enabled = true;
@@ -770,15 +772,15 @@ namespace Hargon
 
         // Animated sweeping barrier pylons
         glm::vec3 obsCoords[3] = {
-            { -2.5f, 1.2f,  2.0f },
-            {  2.5f, 1.2f, 14.0f },
-            {  0.0f, 1.2f, 25.0f }
+            { -2.5f, 1.2f,  -8.0f },
+            {  2.2f, 2.0f,   3.0f },
+            {  0.0f, 2.8f,  16.5f }
         };
         for (int i = 0; i < 3; ++i)
         {
             Entity& obs = scene.CreateEntity("MovingBumper_" + std::to_string(i + 1), "Obstacle");
             obs.transform.position = obsCoords[i];
-            obs.transform.scale = glm::vec3(2.2f, 2.4f, 2.2f);
+            obs.transform.scale = glm::vec3(2.0f, 2.2f, 2.0f);
             obs.mesh.enabled = true;
             obs.mesh.primitive = MeshPrimitive::Cylinder;
             obs.material.albedoColor = glm::vec4(0.95f, 0.36f, 0.22f, 1.0f);
@@ -786,7 +788,7 @@ namespace Hargon
             obs.material.emissiveStrength = 1.3f;
             obs.collider.enabled = true;
             obs.collider.isSphere = true;
-            obs.collider.sphereRadius = 1.2f;
+            obs.collider.sphereRadius = 1.15f;
             obs.rigidBody.enabled = true;
             obs.rigidBody.isKinematic = true;
             obs.animation.enabled = true;
@@ -795,13 +797,13 @@ namespace Hargon
             obs.animation.trackType = 2; // PatrolPingPong
             obs.animation.axis = glm::vec3(1.0f, 0.0f, 0.0f);
             obs.animation.speed = 1.8f + i * 0.3f;
-            obs.animation.amplitude = 1.2f;
+            obs.animation.amplitude = 1.4f;
         }
 
-        // Player Runner
+        // True Gravity Platformer Runner Craft
         {
             Entity& runner = scene.CreateEntity("RunnerCraft", "Player");
-            runner.transform.position = glm::vec3(0.0f, 0.8f, -18.0f);
+            runner.transform.position = glm::vec3(0.0f, 1.4f, -18.5f);
             runner.transform.scale = glm::vec3(1.25f);
             runner.mesh.enabled = true;
             runner.mesh.primitive = MeshPrimitive::Rover;
@@ -816,13 +818,15 @@ namespace Hargon
             runner.light.range = 10.0f;
             runner.rigidBody.enabled = true;
             runner.rigidBody.mass = 1.2f;
-            runner.rigidBody.drag = 5.5f;
-            runner.rigidBody.freezeY = true;
+            runner.rigidBody.drag = 4.2f;
+            runner.rigidBody.useGravity = true;
+            runner.rigidBody.freezeY = false;
+            runner.rigidBody.bounciness = 0.08f;
             runner.collider.enabled = true;
             runner.collider.isSphere = true;
-            runner.collider.sphereRadius = 1.1f;
+            runner.collider.sphereRadius = 1.05f;
             runner.luaScript.enabled = true;
-            runner.luaScript.scriptPath = "assets/scripts/player_rover.lua";
+            runner.luaScript.scriptPath = "assets/scripts/skyway_runner.lua";
             runner.gameplay.enabled = true;
             runner.gameplay.maxHealth = 100.0f;
             runner.gameplay.health = 100.0f;
@@ -831,14 +835,14 @@ namespace Hargon
             runner.gameplay.moveSpeed = 19.5f;
         }
 
-        // 6 Solar Beacons along the track
+        // 6 Solar Beacons across the stepped platforms
         glm::vec3 beaconCoords[6] = {
-            {  0.0f, 1.1f, -8.0f },
-            { -3.8f, 1.1f,  0.0f },
-            {  3.8f, 1.1f,  8.0f },
-            { -3.5f, 1.1f, 18.0f },
-            {  3.5f, 1.1f, 28.0f },
-            {  0.0f, 1.2f, 38.0f }
+            {  0.0f, 1.1f, -11.0f },
+            { -2.8f, 2.0f,   1.5f },
+            {  2.8f, 2.0f,   5.0f },
+            { -2.6f, 2.8f,  15.0f },
+            {  2.6f, 2.8f,  18.5f },
+            {  0.0f, 3.6f,  31.0f }
         };
         for (int i = 0; i < 6; ++i)
         {

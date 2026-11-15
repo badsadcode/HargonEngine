@@ -24,7 +24,12 @@ namespace Hargon
         Shutdown();
     }
 
-    bool EditorApp::Init(GraphicsBackend backend, bool enableValidation, bool autoTestMode)
+    bool EditorApp::Init(
+        GraphicsBackend backend,
+        bool enableValidation,
+        bool autoTestMode,
+        const std::string& initialProjectSlug,
+        int autoCreateTemplate)
     {
         m_AutoTestMode = autoTestMode;
         Log::Init();
@@ -57,19 +62,49 @@ namespace Hargon
         m_CommandList = m_RHI.GetDevice()->createCommandList();
         m_ViewportTarget = m_RHI.CreateOffscreenTarget(1024, 640);
 
+        // Optional CLI project creation for automated workflows (--create-project <slug> <template>)
+        if (!initialProjectSlug.empty() && autoCreateTemplate >= 0)
+        {
+            GameProjectConfig createdCfg;
+            std::string msg;
+            std::string prettyTitle = initialProjectSlug;
+            std::string prettyGenre = (autoCreateTemplate == 4)
+                ? "3D Gravity Platformer & Time-Trial"
+                : "Independent Hargon Game Project";
+            if (autoCreateTemplate == 4 && initialProjectSlug == "SkywayTrial")
+                prettyTitle = "Skyway Trial: Horizon Leap";
+            ProjectManager::CreateNewProject(
+                initialProjectSlug, prettyTitle, prettyGenre, autoCreateTemplate, (autoCreateTemplate == 3), createdCfg, &msg);
+        }
+
         // Discover all game projects in projects/
         m_DiscoveredProjects = ProjectManager::DiscoverProjects("projects");
 
-        // Open the first general-purpose SceneAndLua project by default (never hardcode a specific game!)
+        // Open requested CLI project if provided, or first general-purpose SceneAndLua project by default
         GameProjectConfig initialProj;
         bool foundInitial = false;
-        for (const auto& p : m_DiscoveredProjects)
+        if (!initialProjectSlug.empty())
         {
-            if (p.gameplayModule == "SceneAndLua")
+            for (const auto& p : m_DiscoveredProjects)
             {
-                initialProj = p;
-                foundInitial = true;
-                break;
+                if (p.projectName == initialProjectSlug)
+                {
+                    initialProj = p;
+                    foundInitial = true;
+                    break;
+                }
+            }
+        }
+        if (!foundInitial)
+        {
+            for (const auto& p : m_DiscoveredProjects)
+            {
+                if (p.gameplayModule == "SceneAndLua")
+                {
+                    initialProj = p;
+                    foundInitial = true;
+                    break;
+                }
             }
         }
         if (!foundInitial && !m_DiscoveredProjects.empty())

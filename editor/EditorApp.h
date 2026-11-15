@@ -33,7 +33,12 @@ namespace Hargon
         EditorApp() = default;
         ~EditorApp();
 
-        bool Init(GraphicsBackend backend = GraphicsBackend::Vulkan, bool enableValidation = true, bool autoTestMode = false);
+        bool Init(
+            GraphicsBackend backend = GraphicsBackend::Vulkan,
+            bool enableValidation = true,
+            bool autoTestMode = false,
+            const std::string& initialProjectSlug = "",
+            int autoCreateTemplate = -1);
         void Run();
         void Shutdown();
 
