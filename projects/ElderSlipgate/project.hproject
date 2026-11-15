@@ -1,0 +1,16 @@
+{
+  "author": "Hargon Studio",
+  "enableBadLevel": true,
+  "executableName": "ElderSlipgateFPS.exe",
+  "gameTitle": "Elder Slipgate: Quake-Style Single-Player FPS",
+  "gameplayModule": "ElderSlipgateFPS",
+  "genre": "Single-Player Retro FPS (BadLevel)",
+  "maxWaves": 3,
+  "preferredBackend": "Vulkan",
+  "projectName": "ElderSlipgate",
+  "projectRootDir": "projects/ElderSlipgate",
+  "startupScene": "projects/ElderSlipgate/scenes/elder_slipgate.hscene",
+  "version": "2.0.0",
+  "windowHeight": 850,
+  "windowWidth": 1440
+}

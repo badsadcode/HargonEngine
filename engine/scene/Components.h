@@ -34,6 +34,15 @@ namespace Hargon
         AgX = 4
     };
 
+    // Inspired by Godot Engine's Camera3D & SpringArm3D (scene/3d/camera_3d.h)
+    enum class CameraMode
+    {
+        FollowOffset = 0,
+        ThirdPersonOrbit = 1,
+        FirstPerson = 2,
+        FixedStatic = 3
+    };
+
     struct WorldEnvironmentSettings
     {
         ToneMapperMode tonemapMode = ToneMapperMode::AgX;
@@ -133,7 +142,7 @@ namespace Hargon
         glm::vec3 emissiveColor{ 0.0f, 0.0f, 0.0f };
         float emissiveStrength = 0.0f;
         float uvScale = 1.0f;
-        int patternType = 0; // 0=Solid/Tex, 1=ArenaGrid, 2=Checker, 3=TechPanels, 4=CrystalFacet
+        int patternType = 0; // 0=Solid/Tex, 1=ArenaGrid, 2=Checker, 3=TechPanels, 4=CrystalFacet, 5..14=Surface shaders
     };
 
     struct LightComponent
@@ -145,17 +154,22 @@ namespace Hargon
         float range = 18.0f;
     };
 
+    // Inspired by Godot's Camera3D & SpringArm3D (scene/3d/camera_3d.h, spring_arm_3d.h)
     struct CameraComponent
     {
         bool enabled = false;
         bool isPrimary = false;
-        float fov = 55.0f;
+        CameraMode mode = CameraMode::FollowOffset;
+        float fov = 60.0f;
         float nearClip = 0.1f;
-        float farClip = 350.0f;
-        std::string followTargetName = "PlayerRover";
-        glm::vec3 followOffset{ 0.0f, 14.0f, -15.5f };
-        glm::vec3 followLookOffset{ 0.0f, 0.6f, 3.5f };
-        float smoothSpeed = 7.5f;
+        float farClip = 400.0f;
+        std::string followTargetName = "Player";
+        glm::vec3 followOffset{ 0.0f, 12.0f, -14.5f };
+        glm::vec3 followLookOffset{ 0.0f, 1.0f, 2.5f };
+        float smoothSpeed = 8.0f;
+        float springArmLength = 11.5f;
+        float orbitPitch = 22.0f;
+        float orbitYaw = 0.0f;
     };
 
     struct RigidBodyComponent
@@ -180,12 +194,17 @@ namespace Hargon
         float sphereRadius = 0.75f;
     };
 
+    // Inspired by Godot's AudioStreamPlayer3D (scene/3d/audio_stream_player_3d.h)
     struct AudioSourceComponent
     {
         bool enabled = false;
         std::string soundName = "laser";
         float volume = 0.8f;
         float pitch = 1.0f;
+        float pitchRandomness = 0.06f; // AudioStreamRandomizer pitch variation
+        int attenuationModel = 0;      // 0=InverseDistance, 1=InverseSquare, 2=Logarithmic, 3=Disabled
+        float unitSize = 10.0f;
+        float maxDistance = 65.0f;
         bool loop = false;
         bool spatial = true;
         bool playOnAwake = false;
@@ -196,6 +215,42 @@ namespace Hargon
         bool enabled = false;
         std::string scriptPath;
         bool initialized = false;
+    };
+
+    // Inspired by Godot's CPUParticles3D (scene/3d/cpu_particles_3d.h)
+    struct ParticleEmitterComponent
+    {
+        bool enabled = false;
+        bool emitting = true;
+        int emissionShape = 0; // 0=Point, 1=Sphere, 2=Box, 3=Ring
+        float emissionRadius = 1.0f;
+        glm::vec3 emissionBoxExtents{ 1.0f, 0.5f, 1.0f };
+        float emissionRate = 20.0f; // particles/sec
+        float lifetime = 0.75f;
+        float initialSpeed = 4.0f;
+        float spreadDegrees = 35.0f;
+        glm::vec3 direction{ 0.0f, 1.0f, 0.0f };
+        glm::vec3 startColor{ 0.30f, 0.88f, 1.0f };
+        glm::vec3 endColor{ 0.15f, 0.35f, 1.0f };
+        float particleSize = 0.35f;
+        float spawnAccumulator = 0.0f; // runtime state
+    };
+
+    // Inspired by Godot's AnimationPlayer (scene/animation/animation_player.h)
+    struct AnimationComponent
+    {
+        bool enabled = false;
+        bool playing = true;
+        std::string animName = "IdleBob";
+        int trackType = 0; // 0=IdleBob, 1=SpinContinuous, 2=PatrolPingPong, 3=PulseScale, 4=OrbitCircle, 5=PendulumSwing
+        float speed = 1.5f;
+        float amplitude = 0.65f;
+        glm::vec3 axis{ 0.0f, 1.0f, 0.0f };
+        float currentTime = 0.0f;
+        bool originCaptured = false;
+        glm::vec3 originPos{ 0.0f };
+        glm::vec3 originRot{ 0.0f };
+        glm::vec3 originScale{ 1.0f };
     };
 
     struct GameplayComponent
@@ -214,11 +269,11 @@ namespace Hargon
         int scoreValue = 100;
         EntityID ownerId = kInvalidEntity;
         float aiTimer = 0.0f;
-        int subType = 0;         // EnemyType (0..9), WeaponType (0..4), PickupType, or DoorType
-        int state = 0;           // AI state or Door state (0=closed, 1=opening, 2=open)
-        std::string extraKey;    // Key color ("red", "blue") or metadata
-        glm::vec3 targetPos{ 0.0f }; // Door open target or lift top position
-        glm::vec3 basePos{ 0.0f };   // Initial position for doors/lifts/bobbing pickups
+        int subType = 0;
+        int state = 0;
+        std::string extraKey;
+        glm::vec3 targetPos{ 0.0f };
+        glm::vec3 basePos{ 0.0f };
     };
 
     struct Entity
@@ -241,6 +296,8 @@ namespace Hargon
         ColliderComponent collider;
         AudioSourceComponent audioSource;
         LuaScriptComponent luaScript;
+        ParticleEmitterComponent particleEmitter;
+        AnimationComponent animation;
         GameplayComponent gameplay;
     };
 }

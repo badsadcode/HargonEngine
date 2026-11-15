@@ -41,6 +41,7 @@ namespace Hargon
         static std::vector<LogEntry> GetEntries();
         static void Clear();
         static int GetErrorCount();
+        static bool HasErrors() { return GetErrorCount() > 0; }
 
     private:
         static std::mutex s_Mutex;

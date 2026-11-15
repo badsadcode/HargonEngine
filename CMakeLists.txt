@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(HargonEngine VERSION 1.0.0 LANGUAGES C CXX)
+project(HargonEngine VERSION 2.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -53,7 +53,7 @@ target_include_directories(imgui_static PUBLIC
 )
 target_link_libraries(imgui_static PUBLIC glfw)
 
-# 6. Hargon 3D Game Engine Core Library
+# 6. Hargon 3D Game Engine General-Purpose Core Library (Zero Game-Specific Code!)
 add_library(HargonEngine STATIC
     engine/core/Log.cpp
     engine/core/Window.cpp
@@ -69,8 +69,11 @@ add_library(HargonEngine STATIC
     engine/physics/PhysicsSystem.cpp
     engine/audio/AudioEngine.cpp
     engine/scripting/ScriptEngine.cpp
+    engine/project/SceneTemplates.cpp
+    engine/project/ProjectManager.cpp
+    engine/world/BadLevelImporter.cpp
     engine/runtime/GameSystem.cpp
-    engine/runtime/FPSGameManager.cpp
+    engine/runtime/GameModule.cpp
 )
 
 target_include_directories(HargonEngine PUBLIC
@@ -103,15 +106,37 @@ elseif(UNIX)
     target_link_libraries(HargonEngine PUBLIC dl pthread m)
 endif()
 
-# 7. Hargon Visual Editor Executable ("Make the game" & "Export the game")
+# 7. Independent Game Project: Elder Slipgate FPS (registers into GameModuleRegistry AND builds its own standalone binary)
+add_library(ElderSlipgateProject STATIC
+    projects/ElderSlipgate/src/FPSGameManager.cpp
+    projects/ElderSlipgate/src/ElderSlipgateModule.cpp
+)
+target_include_directories(ElderSlipgateProject PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/projects/ElderSlipgate/src"
+)
+target_link_libraries(ElderSlipgateProject PUBLIC HargonEngine)
+
+add_executable(ElderSlipgateFPS
+    projects/ElderSlipgate/src/main_fps.cpp
+)
+target_link_libraries(ElderSlipgateFPS PRIVATE HargonEngine ElderSlipgateProject)
+
+# 8. Hargon Visual Editor Executable (Zero direct project header dependencies; loads registered modules)
 add_executable(HargonEditor
     editor/EditorApp.cpp
     editor/main_editor.cpp
 )
-target_link_libraries(HargonEditor PRIVATE HargonEngine)
+target_link_libraries(HargonEditor PRIVATE
+    HargonEngine
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,ElderSlipgateProject>
+)
 
-# 8. Hargon Standalone Game Runtime Executable
+# 9. Hargon General-Purpose Standalone Game Runtime Executable (Zero direct project header dependencies)
 add_executable(HargonRuntime
     runtime_app/main_runtime.cpp
 )
-target_link_libraries(HargonRuntime PRIVATE HargonEngine)
+target_link_libraries(HargonRuntime PRIVATE
+    HargonEngine
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,ElderSlipgateProject>
+)

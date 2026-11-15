@@ -5,11 +5,13 @@
 #include "../engine/renderer/ImGuiNVRHI.h"
 #include "../engine/scene/Scene.h"
 #include "../engine/scene/SceneSerializer.h"
+#include "../engine/project/ProjectManager.h"
 #include "../engine/physics/PhysicsSystem.h"
 #include "../engine/audio/AudioEngine.h"
 #include "../engine/scripting/ScriptEngine.h"
+#include "../engine/runtime/GameModule.h"
 #include "../engine/runtime/GameSystem.h"
-#include "../engine/runtime/FPSGameManager.h"
+#include <nvrhi/utils.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -18,36 +20,35 @@
 #include <chrono>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 
 int main(int argc, char** argv)
 {
     Hargon::Log::Init();
+    // Standalone exports ship their own project.hproject; only seed workspace projects/ in dev checkouts.
+    const bool isStandaloneExport = std::filesystem::exists("project.hproject") || std::filesystem::exists("game.json");
+    if (!isStandaloneExport && std::filesystem::exists("engine"))
+        Hargon::ProjectManager::EnsureBuiltInProjects();
 
-    Hargon::GameProjectConfig projectCfg;
-    projectCfg.gameTitle = "Elder Slipgate: Quake-Style Single-Player FPS";
-    if (std::filesystem::exists("game.json"))
-        Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "game.json");
-    else if (std::filesystem::exists("assets/game.json"))
-        Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "assets/game.json");
-
-    Hargon::GraphicsBackend backend = (projectCfg.preferredBackend == "D3D11")
-        ? Hargon::GraphicsBackend::D3D11
-        : Hargon::GraphicsBackend::Vulkan;
-
+    std::string requestedProject;
     bool enableValidation = true;
     bool autoTest = false;
+    std::string backendOverride;
 
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
-        if (arg == "--backend" && i + 1 < argc)
+        if (arg == "--project" && i + 1 < argc)
         {
-            std::string b = argv[++i];
-            backend = (b == "d3d11" || b == "dx11") ? Hargon::GraphicsBackend::D3D11 : Hargon::GraphicsBackend::Vulkan;
+            requestedProject = argv[++i];
+        }
+        else if (arg == "--backend" && i + 1 < argc)
+        {
+            backendOverride = argv[++i];
         }
         else if (arg == "--d3d11")
         {
-            backend = Hargon::GraphicsBackend::D3D11;
+            backendOverride = "d3d11";
         }
         else if (arg == "--autotest")
         {
@@ -55,8 +56,68 @@ int main(int argc, char** argv)
         }
     }
 
+    Hargon::GameProjectConfig projectCfg;
+    bool loadedCfg = false;
+
+    if (!requestedProject.empty())
+    {
+        std::filesystem::path p(requestedProject);
+        if (std::filesystem::is_regular_file(p))
+            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, p.string());
+        else if (std::filesystem::is_directory(p) && std::filesystem::exists(p / "project.hproject"))
+            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, (p / "project.hproject").string());
+        else if (std::filesystem::exists(std::filesystem::path("projects") / requestedProject / "project.hproject"))
+            loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(
+                projectCfg, (std::filesystem::path("projects") / requestedProject / "project.hproject").string());
+    }
+    else if (std::filesystem::exists("project.hproject"))
+    {
+        loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "project.hproject");
+    }
+    else if (std::filesystem::exists("game.json"))
+    {
+        loadedCfg = Hargon::SceneSerializer::LoadProjectConfig(projectCfg, "game.json");
+    }
+
+    std::vector<Hargon::GameProjectConfig> availableProjects;
+    if (!loadedCfg && std::filesystem::exists("projects"))
+    {
+        availableProjects = Hargon::ProjectManager::DiscoverProjects("projects");
+        if (autoTest && !availableProjects.empty())
+        {
+            projectCfg = availableProjects.front();
+            loadedCfg = true;
+        }
+    }
+
+    if (!loadedCfg && availableProjects.empty())
+    {
+        projectCfg.projectName = "Sandbox";
+        projectCfg.gameTitle = "Hargon Engine Runtime";
+        projectCfg.genre = "3D Engine";
+        projectCfg.gameplayModule = "SceneAndLua";
+        projectCfg.windowWidth = 1440;
+        projectCfg.windowHeight = 850;
+        loadedCfg = true;
+    }
+
+    bool inProjectLauncher = !loadedCfg;
+
+    Hargon::GraphicsBackend backend = (projectCfg.preferredBackend == "D3D11")
+        ? Hargon::GraphicsBackend::D3D11
+        : Hargon::GraphicsBackend::Vulkan;
+
+    if (!backendOverride.empty())
+    {
+        backend = (backendOverride == "d3d11" || backendOverride == "dx11")
+            ? Hargon::GraphicsBackend::D3D11
+            : Hargon::GraphicsBackend::Vulkan;
+    }
+
     Hargon::WindowConfig winCfg;
-    winCfg.title = "Elder Slipgate: Quake-Style Single-Player FPS (Hargon Engine + BadLevel)";
+    winCfg.title = inProjectLauncher
+        ? "Hargon Runtime — Select Project"
+        : (projectCfg.gameTitle + " [" + projectCfg.genre + "] — Powered by Hargon Engine");
     winCfg.width = std::max(1280u, projectCfg.windowWidth);
     winCfg.height = std::max(720u, projectCfg.windowHeight);
     winCfg.resizable = true;
@@ -81,17 +142,32 @@ int main(int argc, char** argv)
     audio.Init("assets/audio");
 
     Hargon::Scene scene;
+    Hargon::PhysicsSystem physics;
     Hargon::ScriptEngine scripts;
     scripts.Init(&scene, &window, &audio);
     scripts.SetParticleCallback([&renderer](const glm::vec3& pos, const glm::vec3& col, int count, float speed) {
         renderer.SpawnParticleBurst(pos, col, count, speed);
     });
 
-    Hargon::FPSGameManager fpsGame;
-    fpsGame.Init(&scene, &renderer, &audio, &window, true);
-
     Hargon::CameraView gameCamera;
-    fpsGame.UpdateFirstPersonCamera(gameCamera, 0.0f);
+    std::unique_ptr<Hargon::IGameModule> activeModule;
+
+    auto launchProject = [&](const Hargon::GameProjectConfig& cfg) {
+        projectCfg = cfg;
+        activeModule = Hargon::GameModuleRegistry::Get().CreateModule(projectCfg.gameplayModule);
+        Hargon::GameModuleContext ctx{ &scene, &physics, &scripts, &audio, &renderer, &window, &projectCfg };
+        if (activeModule)
+            activeModule->OnProjectOpen(ctx, true, gameCamera);
+        inProjectLauncher = false;
+        std::string newTitle = projectCfg.gameTitle + " [" + projectCfg.genre + "] — Powered by Hargon Engine";
+        window.SetTitle(newTitle);
+        Hargon::Log::Info("HargonRuntime launched project '" + projectCfg.gameTitle + "' (Module: " + projectCfg.gameplayModule + ")");
+    };
+
+    if (loadedCfg)
+    {
+        launchProject(projectCfg);
+    }
 
     nvrhi::CommandListHandle cmd = rhi.GetDevice()->createCommandList();
     auto lastTime = std::chrono::steady_clock::now();
@@ -115,123 +191,115 @@ int main(int argc, char** argv)
             window.ClearResizedFlag();
         }
 
-        if (autoTest)
-        {
-            dt = 1.0f / 60.0f; // deterministic timestep for autotest
+        Hargon::GameModuleContext ctx{ &scene, &physics, &scripts, &audio, &renderer, &window, &projectCfg };
 
-            if (frameCount == 5)
+        if (!inProjectLauncher)
+        {
+            if (autoTest && activeModule)
             {
-                // Show Main Menu / Settings / Save-Load Menu over the 3D BadLevel Gothic hall
-                fpsGame.SetMenuState(Hargon::FPSMenuState::MainMenu);
+                dt = 1.0f / 60.0f;
+                bool dummyDone = false;
+                activeModule->RunAutoTestStep(ctx, rhi, frameCount, dummyDone);
             }
-            else if (frameCount == 20)
-            {
-                // Enter active gameplay in Campaign 1 Map 1 (c1m1: The Slipgate Sanctum)
-                fpsGame.SetMenuState(Hargon::FPSMenuState::None);
-                fpsGame.UnlockAllWeaponsForShowcase();
-                fpsGame.SelectWeapon(1); // Double-Barrel Buckshot Shotgun
-            }
-            else if (frameCount >= 22 && frameCount <= 80)
-            {
-                fpsGame.AimAtNearestVisibleEnemy();
-                if (frameCount == 42)
-                    fpsGame.SelectWeapon(3); // Ogre Rocket Launcher (gibbing + blood spatter!)
-                window.SetSimulatedKey(GLFW_KEY_F, (frameCount % 10) == 2);
-                window.SetSimulatedKey(GLFW_KEY_W, (frameCount % 20) < 6);
-            }
-            else if (frameCount == 82)
-            {
-                // Test Save Game & Load Game round-trip
-                std::string saveMsg, loadMsg;
-                fpsGame.SaveGame(1, &saveMsg);
-                fpsGame.LoadGame(1, &loadMsg);
-            }
-            else if (frameCount == 88)
-            {
-                // Switch to Campaign 2 Map 2 (c2m2: Slag Processing Works - Industrial style)
-                fpsGame.LoadCampaignLevel(2, 2, false);
-                fpsGame.SetMenuState(Hargon::FPSMenuState::None);
-                fpsGame.UnlockAllWeaponsForShowcase();
-                fpsGame.SelectWeapon(2); // Super Perforator Nailgun
-            }
-            else if (frameCount >= 90 && frameCount <= 145)
-            {
-                fpsGame.AimAtNearestVisibleEnemy();
-                if (frameCount == 115)
-                    fpsGame.SelectWeapon(4); // Thunderbolt Lightning Shaft
-                window.SetSimulatedKey(GLFW_KEY_F, true);
-            }
-            else if (frameCount >= 150)
-            {
-                window.RequestClose();
-            }
+
+            if (activeModule)
+                activeModule->OnStepPlay(ctx, dt, gameCamera);
         }
 
-        fpsGame.Step(dt);
-        fpsGame.UpdateFirstPersonCamera(gameCamera, dt);
+        gameCamera.aspectRatio = static_cast<float>(rhi.GetWidth()) / std::max(1.0f, static_cast<float>(rhi.GetHeight()));
 
         if (!rhi.BeginFrame())
             continue;
 
         imgui.BeginFrame();
 
-        // Render FPS HUD & Menu overlays
-        ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-        fpsGame.RenderUI(ImVec2(0.0f, 0.0f), displaySize, ImGui::GetBackgroundDrawList());
+        if (inProjectLauncher)
+        {
+            float w = static_cast<float>(rhi.GetWidth());
+            float h = static_cast<float>(rhi.GetHeight());
+            ImGui::SetNextWindowPos(ImVec2(w * 0.5f - 320.0f, h * 0.5f - 220.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(640.0f, 440.0f), ImGuiCond_Always);
+            if (ImGui::Begin("Hargon Engine Runtime — Select Game Project", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
+            {
+                ImGui::TextColored(ImVec4(0.4f, 0.88f, 1.0f, 1.0f), "Available Game Projects (projects/)");
+                ImGui::Separator();
+                ImGui::BeginChild("LauncherProjects", ImVec2(0.0f, 320.0f), true);
+                for (const auto& proj : availableProjects)
+                {
+                    ImGui::PushID(proj.projectName.c_str());
+                    if (ImGui::Button("LAUNCH GAME", ImVec2(120.0f, 34.0f)))
+                    {
+                        launchProject(proj);
+                    }
+                    ImGui::SameLine();
+                    ImGui::BeginGroup();
+                    ImGui::Text("%s", proj.gameTitle.c_str());
+                    ImGui::TextColored(ImVec4(0.65f, 0.78f, 0.90f, 1.0f), "%s  |  Module: %s", proj.genre.c_str(), proj.gameplayModule.c_str());
+                    ImGui::EndGroup();
+                    ImGui::Separator();
+                    ImGui::PopID();
+                }
+                ImGui::EndChild();
+                if (ImGui::Button("Exit Runtime", ImVec2(-1.0f, 32.0f)))
+                    window.RequestClose();
+            }
+            ImGui::End();
+        }
+        else if (activeModule)
+        {
+            ImDrawList* bgDrawList = ImGui::GetBackgroundDrawList();
+            activeModule->OnRenderHUD(
+                ctx,
+                ImVec2(0.0f, 0.0f),
+                ImVec2(static_cast<float>(rhi.GetWidth()), static_cast<float>(rhi.GetHeight())),
+                bgDrawList);
+        }
 
         cmd->open();
+        nvrhi::IFramebuffer* fb = rhi.GetCurrentFramebuffer();
 
-        nvrhi::IFramebuffer* mainFb = rhi.GetCurrentFramebuffer();
-        gameCamera.aspectRatio = static_cast<float>(rhi.GetWidth()) / std::max(1.0f, static_cast<float>(rhi.GetHeight()));
+        if (inProjectLauncher)
+        {
+            nvrhi::utils::ClearColorAttachment(cmd, fb, 0, nvrhi::Color(0.04f, 0.06f, 0.10f, 1.0f));
+        }
+        else
+        {
+            renderer.RenderScene(
+                cmd,
+                fb,
+                scene,
+                gameCamera,
+                totalTime,
+                false,
+                Hargon::kInvalidEntity,
+                Hargon::GizmoMode::Translate,
+                -1,
+                false);
+        }
 
-        renderer.RenderScene(
-            cmd,
-            mainFb,
-            scene,
-            gameCamera,
-            totalTime,
-            false,
-            Hargon::kInvalidEntity,
-            Hargon::GizmoMode::Translate,
-            -1,
-            false);
-
-        imgui.Render(cmd, mainFb);
+        imgui.Render(cmd, fb);
 
         cmd->close();
         rhi.FinishFrameAndPresent(cmd);
+    }
 
-        if (autoTest)
-        {
-            if (frameCount == 15)
-            {
-                rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_menu_settings.bmp");
-            }
-            else if (frameCount == 70)
-            {
-                rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign1_combat.bmp");
-                rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_exported_game.bmp");
-            }
-            else if (frameCount == 135)
-            {
-                rhi.SaveTextureToBMP(rhi.GetCurrentBackbuffer(), "screenshot_fps_campaign2_combat.bmp");
-            }
-        }
+    if (!inProjectLauncher)
+    {
+        std::cout << "========================================================\n";
+        std::cout << "  Hargon Engine Project Session Summary\n";
+        std::cout << "  Project           : " << projectCfg.gameTitle << " (" << projectCfg.projectName << ")\n";
+        std::cout << "  Genre             : " << projectCfg.genre << "\n";
+        std::cout << "  Module            : " << projectCfg.gameplayModule << "\n";
+        std::cout << "  RHI Backend       : " << rhi.GetBackendName() << " (" << rhi.GetGPUName() << ")\n";
+        std::cout << "  Score             : " << scene.score << "\n";
+        std::cout << "  Sounds Played     : " << audio.GetPlayedSoundCount() << "\n";
+        std::cout << "  Engine Errors     : " << (Hargon::Log::HasErrors() ? "YES" : "0") << "\n";
+        std::cout << "========================================================\n";
     }
 
     rhi.WaitForIdle();
     cmd = nullptr;
-
-    std::cout << "========================================================\n";
-    std::cout << "  Elder Slipgate FPS Session Summary (Hargon + BadLevel)\n";
-    std::cout << "  RHI Backend       : " << rhi.GetBackendName() << " (" << rhi.GetGPUName() << ")\n";
-    std::cout << "  Last Campaign/Map : C" << fpsGame.GetCurrentCampaign() << "M" << fpsGame.GetCurrentLevelIndex() << " (" << fpsGame.GetCurrentLevelTitle() << ")\n";
-    std::cout << "  Score             : " << scene.score << "\n";
-    std::cout << "  Monsters Slain    : " << scene.enemiesKilled << "\n";
-    std::cout << "  Sounds Played     : " << audio.GetPlayedSoundCount() << "\n";
-    std::cout << "  Engine Errors     : " << Hargon::Log::GetErrorCount() << "\n";
-    std::cout << "========================================================\n";
-
+    activeModule.reset();
     scripts.Shutdown();
     audio.Shutdown();
     imgui.Shutdown();
@@ -239,5 +307,5 @@ int main(int argc, char** argv)
     rhi.Shutdown();
     window.Shutdown();
 
-    return (autoTest && Hargon::Log::GetErrorCount() > 0) ? 1 : 0;
+    return Hargon::Log::HasErrors() ? 1 : 0;
 }

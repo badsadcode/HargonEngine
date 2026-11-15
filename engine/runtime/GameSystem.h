@@ -15,6 +15,12 @@ namespace Hargon
     class GameSystem
     {
     public:
+        // Steps Godot-inspired AnimationPlayer tracks & CPUParticles3D emitters
+        static void StepAnimationsAndParticles(
+            Scene& scene,
+            Renderer3D& renderer,
+            float dt);
+
         static void StepGameplay(
             Scene& scene,
             PhysicsSystem& physics,

@@ -1,8 +1,8 @@
 #pragma once
-#include "../scene/Scene.h"
-#include "../renderer/Renderer3D.h"
-#include "../audio/AudioEngine.h"
-#include "../core/Window.h"
+#include "engine/scene/Scene.h"
+#include "engine/renderer/Renderer3D.h"
+#include "engine/audio/AudioEngine.h"
+#include "engine/core/Window.h"
 #include <imgui.h>
 #include <string>
 #include <vector>

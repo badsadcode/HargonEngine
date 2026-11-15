@@ -42,21 +42,10 @@ namespace Hargon
         const std::vector<Entity>& GetEntities() const { return m_Entities; }
 
         EntityID Raycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float* outDist = nullptr) const;
-
-        // Builds the default playable game scene ("Starforge Outpost: Crystal Defense")
-        void BuildStarforgeOutpostScene();
-
-        // Spawns a single enemy drone at a given position
-        Entity& SpawnEnemyDrone(const glm::vec3& pos, int waveLevel = 1);
-
-        // Spawns a collectible crystal at a given position
-        Entity& SpawnEnergyCrystal(const glm::vec3& pos, bool golden = false);
-
-        // Spawns a plasma projectile
-        Entity& SpawnProjectile(const glm::vec3& pos, const glm::vec3& dir, EntityID ownerId, bool isEnemyProjectile = false, float speed = 38.0f, float damage = 25.0f);
+        bool ShouldProcessEntity(const Entity& e, bool isPaused) const;
 
     public:
-        std::string sceneName = "Starforge Outpost";
+        std::string sceneName = "Untitled 3D Scene";
 
         // Environment settings
         glm::vec3 skyZenithColor{ 0.03f, 0.06f, 0.16f };
@@ -77,8 +66,21 @@ namespace Hargon
         float waveCooldownTimer = 0.0f;
         bool gameOver = false;
         bool gameWon = false;
-        std::string hudBannerText = "WAVE 1: DEFEND THE STARFORGE CORE!";
+        std::string hudBannerText;
         float hudBannerTimer = 4.0f;
+
+        // Data-driven HUD vocabulary (serialized per scene, so the engine never hard-codes game names)
+        std::string introBannerText = "ENTERING SCENE";
+        std::string hudHealthLabel = "HEALTH";
+        std::string hudShieldLabel = "SHIELD";
+        std::string hudObjectiveLabel = "OBJECTIVE";
+        std::string hudCollectibleLabel = "PICKUPS";
+        std::string hudControlsText = "[W/S] Move   [A/D] Turn   [SPACE] Fire   [SHIFT] Boost   [R] Restart";
+        std::string victoryText = "VICTORY!";
+        std::string defeatText = "MISSION FAILED! PRESS [R] TO RESTART";
+
+        // Set by gameplay when the player asks to restart; the host (editor/runtime) reloads the startup scene.
+        bool restartRequested = false;
 
     private:
         std::vector<Entity> m_Entities;

@@ -1,0 +1,16 @@
+{
+  "author": "Hargon Studio",
+  "enableBadLevel": false,
+  "executableName": "StarforgeOutpost.exe",
+  "gameTitle": "Starforge Outpost: Crystal Defense",
+  "gameplayModule": "SceneAndLua",
+  "genre": "Sci-Fi Hover-Rover Action & Wave Defense",
+  "maxWaves": 3,
+  "preferredBackend": "Vulkan",
+  "projectName": "StarforgeOutpost",
+  "projectRootDir": "projects/StarforgeOutpost",
+  "startupScene": "projects/StarforgeOutpost/scenes/starforge_outpost.hscene",
+  "version": "1.0.0",
+  "windowHeight": 850,
+  "windowWidth": 1440
+}

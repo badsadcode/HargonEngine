@@ -40,6 +40,7 @@ namespace Hargon
         bool HasRedo() const { return m_CurrentAction + 1 < static_cast<int>(m_Actions.size()); }
 
         void ClearHistory();
+        void Clear() { ClearHistory(); }
 
         int GetHistoryCount() const { return static_cast<int>(m_Actions.size()); }
         int GetCurrentActionIndex() const { return m_CurrentAction; }

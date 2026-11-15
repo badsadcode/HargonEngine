@@ -1,7 +1,7 @@
 #include "FPSGameManager.h"
-#include "../core/Log.h"
-#include "../core/InputMap.h"
-#include "../animation/TweenSystem.h"
+#include "engine/core/Log.h"
+#include "engine/core/InputMap.h"
+#include "engine/animation/TweenSystem.h"
 #include <nlohmann/json.hpp>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

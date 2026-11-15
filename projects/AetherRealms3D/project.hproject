@@ -1,0 +1,16 @@
+{
+  "author": "Hargon Studio",
+  "enableBadLevel": false,
+  "executableName": "AetherRealms3D.exe",
+  "gameTitle": "Aether Realms: Skyward Sanctum",
+  "gameplayModule": "SceneAndLua",
+  "genre": "3D Floating-Island Action-Adventure & Platformer",
+  "maxWaves": 1,
+  "preferredBackend": "Vulkan",
+  "projectName": "AetherRealms3D",
+  "projectRootDir": "projects/AetherRealms3D",
+  "startupScene": "projects/AetherRealms3D/scenes/aether_realms.hscene",
+  "version": "1.0.0",
+  "windowHeight": 850,
+  "windowWidth": 1440
+}

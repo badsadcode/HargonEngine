@@ -1,0 +1,5930 @@
+{
+  "ambientIntensity": 0.6800000071525574,
+  "arenaHalfSize": 48.0,
+  "entities": [
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Light"
+      ],
+      "id": 1,
+      "light": {
+        "color": [
+          1.0,
+          0.9599999785423279,
+          0.8399999737739563
+        ],
+        "enabled": true,
+        "intensity": 3.200000047683716,
+        "isDirectional": true,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.8500000238418579,
+          0.8500000238418579,
+          0.8999999761581421,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.25,
+        "patternType": 0,
+        "roughness": 0.4000000059604645,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": false,
+        "primitive": "Cube"
+      },
+      "name": "CelestialSunLight",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Light",
+      "transform": {
+        "position": [
+          0.0,
+          35.0,
+          -20.0
+        ],
+        "rotation": [
+          48.0,
+          -32.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": true,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.399999976158142,
+          3.0
+        ],
+        "followOffset": [
+          0.0,
+          8.5,
+          -13.0
+        ],
+        "followTargetName": "SkyExplorer",
+        "fov": 62.0,
+        "isPrimary": true,
+        "mode": 1,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 24.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 9.0,
+        "springArmLength": 13.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Camera"
+      ],
+      "id": 2,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.8500000238418579,
+          0.8500000238418579,
+          0.8999999761581421,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.25,
+        "patternType": 0,
+        "roughness": 0.4000000059604645,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": false,
+        "primitive": "Cube"
+      },
+      "name": "ThirdPersonOrbitCamera",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Camera",
+      "transform": {
+        "position": [
+          0.0,
+          9.5,
+          -22.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 3,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.6200000047683716,
+          0.8199999928474426,
+          0.9800000190734863,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.07999999821186066,
+        "patternType": 2,
+        "roughness": 0.6499999761581421,
+        "uvScale": 18.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Plane"
+      },
+      "name": "LowerCloudSea",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -6.5,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          140.0,
+          1.0,
+          140.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 4,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.3199999928474426,
+          0.7200000286102295,
+          0.4399999976158142,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 6,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SanctumMainPlaza",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -0.6000000238418579,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          26.0,
+          1.399999976158142,
+          26.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 5,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.36000001430511475,
+          0.7599999904632568,
+          0.47999998927116394,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 6,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SouthArrivalIsle",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -0.6000000238418579,
+          -20.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          14.0,
+          1.399999976158142,
+          12.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 6,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.8199999928474426,
+          0.7799999713897705,
+          0.6600000262260437,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 5,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "NorthSpireCitadel",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -0.5,
+          23.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          18.0,
+          1.600000023841858,
+          16.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "IslandFloat",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 1.100000023841858,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 7,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.4000000059604645,
+          0.7400000095367432,
+          0.5199999809265137,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 6,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "WestWindTerrace",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          -23.0,
+          -0.5,
+          2.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          14.0,
+          1.399999976158142,
+          16.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "IslandFloat",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 1.100000023841858,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 8,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.4000000059604645,
+          0.7400000095367432,
+          0.5199999809265137,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 6,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "EastCrystalGarden",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          23.0,
+          -0.5,
+          2.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          14.0,
+          1.399999976158142,
+          16.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 9,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.7799999713897705,
+          0.7200000286102295,
+          0.5799999833106995,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 5,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SkyBridge_South",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -0.44999998807907104,
+          -10.5
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          4.800000190734863,
+          0.6000000238418579,
+          8.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 10,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.7799999713897705,
+          0.7200000286102295,
+          0.5799999833106995,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 5,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SkyBridge_North",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          0.0,
+          -0.44999998807907104,
+          12.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          4.800000190734863,
+          0.6000000238418579,
+          8.0
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 11,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.7799999713897705,
+          0.7200000286102295,
+          0.5799999833106995,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 5,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SkyBridge_West",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          -13.0,
+          -0.44999998807907104,
+          1.5
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          8.0,
+          0.6000000238418579,
+          4.5
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Environment"
+      ],
+      "id": 12,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.7799999713897705,
+          0.7200000286102295,
+          0.5799999833106995,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.15000000596046448,
+        "patternType": 5,
+        "roughness": 0.5199999809265137,
+        "uvScale": 4.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "SkyBridge_East",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Environment",
+      "transform": {
+        "position": [
+          13.0,
+          -0.44999998807907104,
+          1.5
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          8.0,
+          0.6000000238418579,
+          4.5
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "SpireSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 32.0,
+        "trackType": 1
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 500.0,
+        "maxHealth": 500.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Core"
+      ],
+      "id": 13,
+      "light": {
+        "color": [
+          1.0,
+          0.8600000143051147,
+          0.41999998688697815
+        ],
+        "enabled": true,
+        "intensity": 5.0,
+        "isDirectional": false,
+        "range": 24.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.949999988079071,
+          0.8500000238418579,
+          0.41999998688697815,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.8199999928474426,
+          0.30000001192092896
+        ],
+        "emissiveStrength": 1.7999999523162842,
+        "metallic": 0.7200000286102295,
+        "patternType": 0,
+        "roughness": 0.20000000298023224,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "PropObelisk"
+      },
+      "name": "SanctumSpire",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 2.4000000953674316,
+        "emissionRate": 28.0,
+        "emissionShape": 3,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.8500000238418579,
+          1.0
+        ],
+        "initialSpeed": 5.5,
+        "lifetime": 0.8999999761581421,
+        "particleSize": 0.41999998688697815,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8799999952316284,
+          0.3199999928474426
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Core",
+      "transform": {
+        "position": [
+          0.0,
+          2.4000000953674316,
+          23.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          2.5,
+          4.599999904632568,
+          2.5
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Obstacle"
+      ],
+      "id": 14,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.8600000143051147,
+          0.8199999928474426,
+          0.7200000286102295,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.25,
+        "patternType": 5,
+        "roughness": 0.41999998688697815,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "PropPillar"
+      },
+      "name": "AetherWindTower_1",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Obstacle",
+      "transform": {
+        "position": [
+          -23.0,
+          2.5,
+          6.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.7999999523162842,
+          5.0,
+          1.7999999523162842
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "RotorSpin",
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 95.0,
+        "trackType": 1
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Decoration"
+      ],
+      "id": 15,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.800000011920929,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.25,
+        "patternType": 0,
+        "roughness": 0.4000000059604645,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "WindRotorBlades_1",
+      "parentId": 14,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Decoration",
+      "transform": {
+        "position": [
+          0.0,
+          0.550000011920929,
+          0.6499999761581421
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          2.799999952316284,
+          0.3499999940395355,
+          0.3499999940395355
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Obstacle"
+      ],
+      "id": 16,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.8600000143051147,
+          0.8199999928474426,
+          0.7200000286102295,
+          1.0
+        ],
+        "emissiveColor": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissiveStrength": 0.0,
+        "metallic": 0.25,
+        "patternType": 5,
+        "roughness": 0.41999998688697815,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "PropPillar"
+      },
+      "name": "AetherWindTower_2",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Obstacle",
+      "transform": {
+        "position": [
+          23.0,
+          2.5,
+          6.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.7999999523162842,
+          5.0,
+          1.7999999523162842
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "RotorSpin",
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 95.0,
+        "trackType": 1
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": false,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.75
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": false,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 100.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Decoration"
+      ],
+      "id": 17,
+      "light": {
+        "color": [
+          1.0,
+          0.949999988079071,
+          0.8500000238418579
+        ],
+        "enabled": false,
+        "intensity": 2.5,
+        "isDirectional": false,
+        "range": 18.0
+      },
+      "luaScript": {
+        "enabled": false,
+        "scriptPath": ""
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.800000011920929,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.25,
+        "patternType": 0,
+        "roughness": 0.4000000059604645,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Cube"
+      },
+      "name": "WindRotorBlades_2",
+      "parentId": 16,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Decoration",
+      "transform": {
+        "position": [
+          0.0,
+          0.550000011920929,
+          0.6499999761581421
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          2.799999952316284,
+          0.3499999940395355,
+          0.3499999940395355
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 1.149999976158142
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 30.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.1599999964237213,
+        "health": 120.0,
+        "maxHealth": 120.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 17.5,
+        "scoreValue": 100,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Player"
+      ],
+      "id": 18,
+      "light": {
+        "color": [
+          0.3499999940395355,
+          0.8799999952316284,
+          1.0
+        ],
+        "enabled": true,
+        "intensity": 2.5999999046325684,
+        "isDirectional": false,
+        "range": 12.0
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/player_rover.lua"
+      },
+      "material": {
+        "albedoColor": [
+          0.949999988079071,
+          0.7799999713897705,
+          0.25,
+          1.0
+        ],
+        "emissiveColor": [
+          0.25,
+          0.8500000238418579,
+          1.0
+        ],
+        "emissiveStrength": 0.8500000238418579,
+        "metallic": 0.7799999713897705,
+        "patternType": 0,
+        "roughness": 0.20000000298023224,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "EnemyKnight"
+      },
+      "name": "SkyExplorer",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 14.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.949999988079071,
+          0.800000011920929,
+          0.25
+        ],
+        "initialSpeed": 2.200000047683716,
+        "lifetime": 0.44999998807907104,
+        "particleSize": 0.2800000011920929,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.3499999940395355,
+          0.9200000166893005,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 6.0,
+        "enabled": true,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.2000000476837158,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Player",
+      "transform": {
+        "position": [
+          0.0,
+          0.949999988079071,
+          -18.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.25,
+          1.4500000476837158,
+          1.25
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 19,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_1",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          0.0,
+          1.100000023841858,
+          -10.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 20,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_2",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          -7.5,
+          1.100000023841858,
+          -4.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 21,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_3",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          7.5,
+          1.100000023841858,
+          -4.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 22,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_4",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          0.0,
+          1.100000023841858,
+          3.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 23,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_5",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          -22.0,
+          1.2000000476837158,
+          1.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 24,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_6",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          22.0,
+          1.2000000476837158,
+          1.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 25,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_7",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          -5.5,
+          1.2000000476837158,
+          19.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.3499999940395355,
+        "animName": "RelicHoverSpin",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": true,
+        "playing": true,
+        "speed": 2.4000000953674316,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": true,
+        "sphereRadius": 1.0499999523162842
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 25.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.0,
+        "fireRate": 0.18000000715255737,
+        "health": 35.0,
+        "maxHealth": 100.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 14.0,
+        "scoreValue": 250,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Crystal"
+      ],
+      "id": 26,
+      "light": {
+        "color": [
+          1.0,
+          0.800000011920929,
+          0.20000000298023224
+        ],
+        "enabled": true,
+        "intensity": 2.200000047683716,
+        "isDirectional": false,
+        "range": 7.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/crystal_pickup.lua"
+      },
+      "material": {
+        "albedoColor": [
+          1.0,
+          0.8399999737739563,
+          0.2199999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          1.0,
+          0.7200000286102295,
+          0.15000000596046448
+        ],
+        "emissiveStrength": 2.4000000953674316,
+        "metallic": 0.20000000298023224,
+        "patternType": 4,
+        "roughness": 0.11999999731779099,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "Crystal"
+      },
+      "name": "SkywardRelic_8",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 10.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": true,
+        "endColor": [
+          0.25,
+          0.949999988079071,
+          1.0
+        ],
+        "initialSpeed": 2.5,
+        "lifetime": 0.6000000238418579,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          1.0,
+          0.8999999761581421,
+          0.25
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 4.0,
+        "enabled": false,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.0,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Crystal",
+      "transform": {
+        "position": [
+          5.5,
+          1.2000000476837158,
+          19.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.350000023841858,
+          1.350000023841858,
+          1.350000023841858
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.949999988079071
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 15.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 1.2000000476837158,
+        "fireRate": 1.9500000476837158,
+        "health": 45.0,
+        "maxHealth": 45.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 6.800000190734863,
+        "scoreValue": 150,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Enemy"
+      ],
+      "id": 27,
+      "light": {
+        "color": [
+          1.0,
+          0.2199999988079071,
+          0.15000000596046448
+        ],
+        "enabled": true,
+        "intensity": 2.0,
+        "isDirectional": false,
+        "range": 8.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/enemy_drone.lua"
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          0.949999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.75,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.6499999761581421,
+        "patternType": 3,
+        "roughness": 0.25,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "EnemyScrag"
+      },
+      "name": "SkyConstructGuardian_1",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 3.0,
+        "enabled": true,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.2000000476837158,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Enemy",
+      "transform": {
+        "position": [
+          -8.0,
+          1.100000023841858,
+          8.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.25,
+          1.25,
+          1.25
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.949999988079071
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 15.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 1.600000023841858,
+        "fireRate": 1.9500000476837158,
+        "health": 45.0,
+        "maxHealth": 45.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 6.800000190734863,
+        "scoreValue": 150,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Enemy"
+      ],
+      "id": 28,
+      "light": {
+        "color": [
+          1.0,
+          0.2199999988079071,
+          0.15000000596046448
+        ],
+        "enabled": true,
+        "intensity": 2.0,
+        "isDirectional": false,
+        "range": 8.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/enemy_drone.lua"
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          0.949999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.75,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.6499999761581421,
+        "patternType": 3,
+        "roughness": 0.25,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "EnemyScrag"
+      },
+      "name": "SkyConstructGuardian_2",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 3.0,
+        "enabled": true,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.2000000476837158,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Enemy",
+      "transform": {
+        "position": [
+          8.0,
+          1.100000023841858,
+          8.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.25,
+          1.25,
+          1.25
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.949999988079071
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 15.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 0.800000011920929,
+        "fireRate": 1.9500000476837158,
+        "health": 45.0,
+        "maxHealth": 45.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 6.800000190734863,
+        "scoreValue": 150,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Enemy"
+      ],
+      "id": 29,
+      "light": {
+        "color": [
+          1.0,
+          0.2199999988079071,
+          0.15000000596046448
+        ],
+        "enabled": true,
+        "intensity": 2.0,
+        "isDirectional": false,
+        "range": 8.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/enemy_drone.lua"
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          0.949999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.75,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.6499999761581421,
+        "patternType": 3,
+        "roughness": 0.25,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "EnemyScrag"
+      },
+      "name": "SkyConstructGuardian_3",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 3.0,
+        "enabled": true,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.2000000476837158,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Enemy",
+      "transform": {
+        "position": [
+          -20.0,
+          1.100000023841858,
+          -3.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.25,
+          1.25,
+          1.25
+        ]
+      }
+    },
+    {
+      "animation": {
+        "amplitude": 0.6499999761581421,
+        "animName": "IdleBob",
+        "axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "enabled": false,
+        "playing": true,
+        "speed": 1.5,
+        "trackType": 0
+      },
+      "audioSource": {
+        "attenuationModel": 0,
+        "enabled": false,
+        "loop": false,
+        "maxDistance": 65.0,
+        "pitch": 1.0,
+        "pitchRandomness": 0.05999999865889549,
+        "playOnAwake": false,
+        "soundName": "laser",
+        "spatial": true,
+        "unitSize": 10.0,
+        "volume": 0.800000011920929
+      },
+      "camera": {
+        "enabled": false,
+        "farClip": 400.0,
+        "followLookOffset": [
+          0.0,
+          1.0,
+          2.5
+        ],
+        "followOffset": [
+          0.0,
+          12.0,
+          -14.5
+        ],
+        "followTargetName": "Player",
+        "fov": 60.0,
+        "isPrimary": false,
+        "mode": 0,
+        "nearClip": 0.10000000149011612,
+        "orbitPitch": 22.0,
+        "orbitYaw": 0.0,
+        "smoothSpeed": 8.0,
+        "springArmLength": 11.5
+      },
+      "collider": {
+        "boxHalfExtents": [
+          0.6000000238418579,
+          0.6000000238418579,
+          0.6000000238418579
+        ],
+        "enabled": true,
+        "isSphere": true,
+        "isTrigger": false,
+        "sphereRadius": 0.949999988079071
+      },
+      "gameplay": {
+        "basePos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "damage": 15.0,
+        "enabled": true,
+        "extraKey": "",
+        "fireCooldown": 1.2000000476837158,
+        "fireRate": 1.9500000476837158,
+        "health": 45.0,
+        "maxHealth": 45.0,
+        "maxLifetime": 0.0,
+        "maxShield": 100.0,
+        "moveSpeed": 6.800000190734863,
+        "scoreValue": 150,
+        "shield": 100.0,
+        "state": 0,
+        "subType": 0,
+        "targetPos": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "groups": [
+        "Enemy"
+      ],
+      "id": 30,
+      "light": {
+        "color": [
+          1.0,
+          0.2199999988079071,
+          0.15000000596046448
+        ],
+        "enabled": true,
+        "intensity": 2.0,
+        "isDirectional": false,
+        "range": 8.5
+      },
+      "luaScript": {
+        "enabled": true,
+        "scriptPath": "assets/scripts/enemy_drone.lua"
+      },
+      "material": {
+        "albedoColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          0.949999988079071,
+          1.0
+        ],
+        "emissiveColor": [
+          0.20000000298023224,
+          0.75,
+          1.0
+        ],
+        "emissiveStrength": 1.399999976158142,
+        "metallic": 0.6499999761581421,
+        "patternType": 3,
+        "roughness": 0.25,
+        "uvScale": 1.0
+      },
+      "mesh": {
+        "customObjPath": "",
+        "enabled": true,
+        "primitive": "EnemyScrag"
+      },
+      "name": "SkyConstructGuardian_4",
+      "parentId": 0,
+      "particleEmitter": {
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "emissionBoxExtents": [
+          1.0,
+          0.5,
+          1.0
+        ],
+        "emissionRadius": 1.0,
+        "emissionRate": 20.0,
+        "emissionShape": 0,
+        "emitting": true,
+        "enabled": false,
+        "endColor": [
+          0.15000000596046448,
+          0.3499999940395355,
+          1.0
+        ],
+        "initialSpeed": 4.0,
+        "lifetime": 0.75,
+        "particleSize": 0.3499999940395355,
+        "spreadDegrees": 35.0,
+        "startColor": [
+          0.30000001192092896,
+          0.8799999952316284,
+          1.0
+        ]
+      },
+      "processMode": 0,
+      "rigidBody": {
+        "bounciness": 0.20000000298023224,
+        "drag": 3.0,
+        "enabled": true,
+        "freezeY": true,
+        "isKinematic": false,
+        "mass": 1.2000000476837158,
+        "useGravity": false,
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "tag": "Enemy",
+      "transform": {
+        "position": [
+          20.0,
+          1.100000023841858,
+          -3.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.25,
+          1.25,
+          1.25
+        ]
+      }
+    }
+  ],
+  "fogDensity": 0.002199999988079071,
+  "groundAmbientColor": [
+    0.23999999463558197,
+    0.3400000035762787,
+    0.41999998688697815
+  ],
+  "hud": {
+    "collectibleLabel": "RELICS",
+    "controls": "[W/S] Run   [A/D] Turn   [SPACE] Cast Aether Bolt   [SHIFT] Dash   [R] Restart",
+    "defeat": "YOU FELL FROM THE SKY... PRESS [R] TO TRY AGAIN",
+    "healthLabel": "EXPLORER VITALITY",
+    "introBanner": "COLLECT ALL 8 SKYWARD RELICS & DEFEAT THE SKY-CONSTRUCT GUARDIANS!",
+    "objectiveLabel": "SANCTUM SPIRE",
+    "shieldLabel": "AETHER BARRIER",
+    "victory": "THE SANCTUM SPIRE AWAKENS! REALM RESTORED!"
+  },
+  "maxWaves": 1,
+  "sceneName": "Aether Realms: Skyward Sanctum",
+  "skyHorizonColor": [
+    0.550000011920929,
+    0.7799999713897705,
+    0.9599999785423279
+  ],
+  "skyZenithColor": [
+    0.05999999865889549,
+    0.23999999463558197,
+    0.5799999833106995
+  ],
+  "worldEnv": {
+    "adjustmentBrightness": 1.0399999618530273,
+    "adjustmentContrast": 1.059999942779541,
+    "adjustmentEnabled": true,
+    "adjustmentSaturation": 1.159999966621399,
+    "fogHeight": -6.0,
+    "fogHeightDensity": 0.07999999821186066,
+    "fogSunScatter": 0.3499999940395355,
+    "frustumCullingEnabled": true,
+    "glowBloom": 0.18000000715255737,
+    "glowEnabled": true,
+    "glowIntensity": 0.41999998688697815,
+    "tonemapExposure": 1.1200000047683716,
+    "tonemapMode": 4,
+    "tonemapWhite": 1.0
+  }
+}

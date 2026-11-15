@@ -1,4 +1,5 @@
 #include "ScriptEngine.h"
+#include "../project/SceneTemplates.h"
 #include "../core/Window.h"
 #include "../core/InputMap.h"
 #include "../core/Log.h"
@@ -301,7 +302,8 @@ namespace Hargon
 
         if (se && se->GetScene())
         {
-            Entity& proj = se->GetScene()->SpawnProjectile(
+            Entity& proj = SceneTemplates::SpawnProjectile(
+                *se->GetScene(),
                 glm::vec3(px, py, pz),
                 glm::vec3(dx, dy, dz),
                 ownerId,

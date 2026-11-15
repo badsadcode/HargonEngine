@@ -5,15 +5,18 @@
 #include "../engine/renderer/ImGuiNVRHI.h"
 #include "../engine/scene/Scene.h"
 #include "../engine/scene/SceneSerializer.h"
+#include "../engine/project/ProjectManager.h"
 #include "../engine/physics/PhysicsSystem.h"
 #include "../engine/audio/AudioEngine.h"
 #include "../engine/scripting/ScriptEngine.h"
-#include "../engine/runtime/FPSGameManager.h"
 #include "../engine/core/UndoRedo.h"
 #include "../engine/core/InputMap.h"
 #include "../engine/animation/TweenSystem.h"
+#include "../engine/runtime/GameModule.h"
 #include <imgui.h>
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace Hargon
 {
@@ -34,6 +37,8 @@ namespace Hargon
         void Run();
         void Shutdown();
 
+        bool OpenProject(const GameProjectConfig& config);
+
     private:
         void UpdateEditorCamera(float dt);
         void HandleViewportGizmoAndPicking();
@@ -49,9 +54,11 @@ namespace Hargon
         void DrawViewportPanel(float dt);
         void DrawBottomPanel(float dt);
         void DrawExportModal();
+        void DrawProjectManagerModal();
 
         void OpenLuaScriptInEditor(const std::string& path);
         void SaveAndReloadCurrentLuaScript();
+        GameModuleContext BuildModuleContext();
 
         glm::vec3 ComputeViewportRay(const ImVec2& mousePos) const;
 
@@ -65,11 +72,12 @@ namespace Hargon
         ScriptEngine m_Scripts;
 
         Scene m_Scene;
-        FPSGameManager m_FPSGame;
+        std::unique_ptr<IGameModule> m_GameModule;
         UndoRedo m_UndoRedo;
+
+        std::vector<GameProjectConfig> m_DiscoveredProjects;
         GameProjectConfig m_ProjectConfig;
-        std::string m_CurrentScenePath = "assets/scenes/starforge_outpost.hscene";
-        std::string m_SavedEditSceneSnapshot;
+        std::string m_CurrentScenePath;
 
         OffscreenTarget m_ViewportTarget;
         nvrhi::CommandListHandle m_CommandList;
@@ -85,11 +93,12 @@ namespace Hargon
         CameraView m_EditorCamera;
         CameraView m_PlayCamera;
         float m_EditorCamYaw = 0.0f;
-        float m_EditorCamPitch = 32.0f;
+        float m_EditorCamPitch = 25.0f;
         float m_EditorCamSpeed = 18.0f;
 
         bool m_DrawGrid = true;
         bool m_DrawColliders = false;
+        bool m_LivePreviewAnimations = true;
         bool m_ViewportHovered = false;
         ImVec2 m_ViewportPos{ 0.0f, 0.0f };
         ImVec2 m_ViewportSize{ 1024.0f, 640.0f };
@@ -101,8 +110,16 @@ namespace Hargon
         std::string m_LuaConsoleInput = "Engine.log('Lua REPL Ready!')";
 
         bool m_ShowExportModal = false;
-        std::string m_ExportDirectory = "ExportedGame";
+        std::string m_ExportDirectory = "Exports/GameProject";
         std::string m_ExportStatusMessage;
+
+        bool m_ShowProjectManagerModal = false;
+        std::string m_NewProjectSlug = "ChronoCitadel";
+        std::string m_NewProjectTitle = "Chrono Citadel: Time Weaver";
+        std::string m_NewProjectGenre = "3D Action-Puzzle Adventure";
+        int m_NewProjectTemplate = 1;
+        bool m_NewProjectBadLevel = false;
+        std::string m_ProjectModalStatus;
 
         float m_TotalTime = 0.0f;
         float m_SmoothedFPS = 60.0f;

@@ -1,4 +1,5 @@
 #include "GameSystem.h"
+#include "../project/SceneTemplates.h"
 #include "../core/Window.h"
 #include "../core/Log.h"
 #include <filesystem>
@@ -11,6 +12,104 @@ namespace Hargon
 {
     static constexpr float kTwoPi = 6.28318530718f;
 
+    void GameSystem::StepAnimationsAndParticles(
+        Scene& scene,
+        Renderer3D& renderer,
+        float dt)
+    {
+        for (auto& e : scene.GetEntities())
+        {
+            if (!scene.ShouldProcessEntity(e, false))
+                continue;
+
+            // 1. Godot AnimationPlayer Track Evaluation
+            if (e.animation.enabled && e.animation.playing)
+            {
+                if (!e.animation.originCaptured)
+                {
+                    e.animation.originPos = e.transform.position;
+                    e.animation.originRot = e.transform.rotation;
+                    e.animation.originScale = e.transform.scale;
+                    e.animation.originCaptured = true;
+                }
+
+                e.animation.currentTime += dt * e.animation.speed;
+                float t = e.animation.currentTime;
+                float amp = e.animation.amplitude;
+
+                switch (e.animation.trackType)
+                {
+                case 0: // IdleBob + gentle Y spin
+                    e.transform.position.y = e.animation.originPos.y + std::sin(t * 2.2f) * amp;
+                    e.transform.rotation.y += dt * 42.0f;
+                    break;
+                case 1: // SpinContinuous around axis
+                {
+                    glm::vec3 ax = glm::length(e.animation.axis) > 0.001f ? glm::normalize(e.animation.axis) : glm::vec3(0.0f, 1.0f, 0.0f);
+                    e.transform.rotation += ax * (e.animation.speed * dt);
+                    break;
+                }
+                case 2: // PatrolPingPong along axis
+                {
+                    glm::vec3 ax = glm::length(e.animation.axis) > 0.001f ? glm::normalize(e.animation.axis) : glm::vec3(1.0f, 0.0f, 0.0f);
+                    e.transform.position = e.animation.originPos + ax * (std::sin(t) * amp * 4.0f);
+                    break;
+                }
+                case 3: // PulseScale
+                {
+                    float s = 1.0f + std::sin(t * 3.0f) * (amp * 0.35f);
+                    e.transform.scale = e.animation.originScale * s;
+                    break;
+                }
+                case 4: // OrbitCircle in XZ
+                    e.transform.position.x = e.animation.originPos.x + std::cos(t) * amp * 3.0f;
+                    e.transform.position.z = e.animation.originPos.z + std::sin(t) * amp * 3.0f;
+                    break;
+                case 5: // PendulumSwing
+                    e.transform.rotation.z = e.animation.originRot.z + std::sin(t * 2.0f) * (amp * 35.0f);
+                    break;
+                }
+            }
+
+            // 2. Godot CPUParticles3D Continuous Emitter Evaluation
+            if (e.particleEmitter.enabled && e.particleEmitter.emitting && e.particleEmitter.emissionRate > 0.0f)
+            {
+                e.particleEmitter.spawnAccumulator += e.particleEmitter.emissionRate * dt;
+                int count = static_cast<int>(e.particleEmitter.spawnAccumulator);
+                if (count > 0)
+                {
+                    e.particleEmitter.spawnAccumulator -= static_cast<float>(count);
+                    count = std::min(count, 8);
+                    glm::vec3 worldPos = scene.GetWorldPosition(e);
+                    for (int i = 0; i < count; ++i)
+                    {
+                        float phase = static_cast<float>((e.id * 17 + i * 31) % 100) / 100.0f * kTwoPi + e.animation.currentTime;
+                        glm::vec3 offset(0.0f);
+                        if (e.particleEmitter.emissionShape == 1) // Sphere
+                        {
+                            offset = glm::vec3(std::cos(phase), std::sin(phase * 1.7f), std::sin(phase)) * (e.particleEmitter.emissionRadius * 0.5f);
+                        }
+                        else if (e.particleEmitter.emissionShape == 2) // Box
+                        {
+                            offset = glm::vec3(std::cos(phase) * e.particleEmitter.emissionBoxExtents.x,
+                                               0.2f,
+                                               std::sin(phase) * e.particleEmitter.emissionBoxExtents.z);
+                        }
+                        else if (e.particleEmitter.emissionShape == 3) // Ring
+                        {
+                            offset = glm::vec3(std::cos(phase) * e.particleEmitter.emissionRadius,
+                                               0.25f,
+                                               std::sin(phase) * e.particleEmitter.emissionRadius);
+                        }
+
+                        glm::vec3 col = glm::mix(e.particleEmitter.startColor, e.particleEmitter.endColor, (i % 2) ? 0.25f : 0.75f);
+                        renderer.SpawnParticleBurst(worldPos + offset, col, 1, e.particleEmitter.initialSpeed);
+                    }
+                }
+            }
+        }
+    }
+
     void GameSystem::StepGameplay(
         Scene& scene,
         PhysicsSystem& physics,
@@ -22,13 +121,15 @@ namespace Hargon
     {
         if (window && window->IsKeyPressedByName("R") && (scene.gameOver || scene.gameWon))
         {
-            scene.BuildStarforgeOutpostScene();
+            scene.restartRequested = true;
             audio.PlaySound2D("wave_start", 0.8f, 1.0f);
             return;
         }
 
         if (scene.hudBannerTimer > 0.0f)
             scene.hudBannerTimer = std::max(0.0f, scene.hudBannerTimer - dt);
+
+        StepAnimationsAndParticles(scene, renderer, dt);
 
         if (scene.gameOver || scene.gameWon)
         {
@@ -42,10 +143,17 @@ namespace Hargon
         // 2. Step Physics & Collisions
         physics.Step(scene, dt);
 
-        // 3. Process Projectile Lifetimes & Player Shield Regen
+        // 3. Process Projectile Lifetimes, Shield Regen & Listener Pose via Tags
+        Entity* activePlayer = nullptr;
+        {
+            auto players = scene.FindEntitiesByTag("Player");
+            if (!players.empty())
+                activePlayer = scene.GetEntity(players[0]);
+        }
+
         for (auto& e : scene.GetEntities())
         {
-            if (!e.alive || !e.gameplay.enabled)
+            if (!scene.ShouldProcessEntity(e, false) || !e.gameplay.enabled)
                 continue;
 
             if (e.gameplay.maxLifetime > 0.0f)
@@ -59,7 +167,7 @@ namespace Hargon
             else if (e.tag.tag == "Player")
             {
                 e.gameplay.shield = std::min(e.gameplay.maxShield, e.gameplay.shield + 5.0f * dt);
-                audio.SetListenerTransform(e.transform.position, e.transform.GetForward());
+                audio.SetListenerTransform(scene.GetWorldPosition(e), e.transform.GetForward());
             }
         }
 
@@ -82,7 +190,7 @@ namespace Hargon
             Entity* p1 = nullptr;
             Entity* p2 = nullptr;
 
-            // Player/Turret Projectile hits Enemy Drone
+            // Player/Turret Projectile hits Enemy
             if (matchPair("Projectile", "Enemy", p1, p2))
             {
                 p2->gameplay.health -= p1->gameplay.damage;
@@ -98,14 +206,15 @@ namespace Hargon
                     ++scene.enemiesKilled;
                     renderer.SpawnParticleBurst(deathPos, glm::vec3(1.0f, 0.45f, 0.15f), 28, 12.5f);
                     audio.PlaySound3D("explosion", deathPos, 0.9f, 1.0f);
+                    scene.EmitSignal("enemy_slain", p2->id, p2->tag.name);
 
                     if ((scene.enemiesKilled % 2) == 0)
                     {
-                        scene.SpawnEnergyCrystal(deathPos, (scene.enemiesKilled % 4) == 0);
+                        SceneTemplates::SpawnEnergyCrystal(scene, deathPos, (scene.enemiesKilled % 4) == 0);
                     }
                 }
             }
-            // Enemy Projectile hits Player Rover
+            // Enemy Projectile hits Player
             else if (matchPair("EnemyProjectile", "Player", p1, p2))
             {
                 float dmg = p1->gameplay.damage;
@@ -123,7 +232,7 @@ namespace Hargon
                 renderer.SpawnParticleBurst(col.contactPoint, glm::vec3(1.0f, 0.25f, 0.20f), 12, 8.0f);
                 audio.PlaySound2D("hit", 0.75f, 0.85f);
             }
-            // Enemy Projectile hits Starforge Core
+            // Enemy Projectile hits Core
             else if (matchPair("EnemyProjectile", "Core", p1, p2))
             {
                 p2->gameplay.health = std::max(0.0f, p2->gameplay.health - p1->gameplay.damage);
@@ -131,7 +240,7 @@ namespace Hargon
                 renderer.SpawnParticleBurst(col.contactPoint, glm::vec3(1.0f, 0.35f, 0.15f), 12, 8.0f);
                 audio.PlaySound3D("hit", col.contactPoint, 0.75f, 0.9f);
             }
-            // Player Rover collects Energy Crystal
+            // Player collects Crystal / Beacon Pickup
             else if (matchPair("Player", "Crystal", p1, p2))
             {
                 p1->gameplay.health = std::min(p1->gameplay.maxHealth, p1->gameplay.health + p2->gameplay.health);
@@ -140,9 +249,10 @@ namespace Hargon
                 ++scene.crystalsCollected;
                 renderer.SpawnParticleBurst(p2->transform.position, glm::vec3(0.3f, 0.98f, 1.0f), 18, 9.0f);
                 audio.PlaySound2D("pickup", 0.85f, 1.0f);
+                scene.EmitSignal("item_collected", p2->id, p2->tag.name);
                 p2->alive = false;
             }
-            // Enemy Drone rams Player Rover or Core
+            // Enemy or Obstacle rams Player / Core
             else if (matchPair("Enemy", "Player", p1, p2) || matchPair("Enemy", "Core", p1, p2))
             {
                 p2->gameplay.health = std::max(0.0f, p2->gameplay.health - 8.0f * dt);
@@ -162,20 +272,28 @@ namespace Hargon
         scene.FlushDestroyedEntities();
         renderer.UpdateParticles(dt);
 
-        // 5. Check Player / Core Survival & Wave Progression
-        Entity* player = scene.FindEntityByName("PlayerRover");
-        Entity* core = scene.FindEntityByName("StarforgeCore");
-        if ((player && player->gameplay.health <= 0.0f) || (core && core->gameplay.health <= 0.0f))
+        // 5. Check Player / Core Survival & Wave / Objective Progression (Pure Tag-Based)
+        Entity* core = nullptr;
+        {
+            auto cores = scene.FindEntitiesByTag("Core");
+            if (!cores.empty())
+                core = scene.GetEntity(cores[0]);
+        }
+
+        if ((activePlayer && activePlayer->gameplay.health <= 0.0f) || (core && core->gameplay.health <= 0.0f))
         {
             scene.gameOver = true;
-            scene.hudBannerText = "OUTPOST OVERRUN! PRESS [R] TO RESTART MISSION";
+            scene.hudBannerText = scene.defeatText.empty() ? "MISSION FAILED! PRESS [R] TO RESTART" : scene.defeatText;
             scene.hudBannerTimer = 999.0f;
             audio.PlaySound2D("explosion", 1.0f, 0.7f);
             return;
         }
 
         scene.enemiesRemainingInWave = static_cast<int>(scene.FindEntitiesByTag("Enemy").size());
-        if (scene.enemiesRemainingInWave == 0)
+        int collectiblesLeft = static_cast<int>(scene.FindEntitiesByTag("Crystal").size());
+        bool hadAnyObjectives = (scene.maxWaves > 1 || scene.enemiesKilled > 0 || scene.crystalsCollected > 0);
+
+        if (hadAnyObjectives && scene.enemiesRemainingInWave == 0 && (scene.maxWaves > 1 || collectiblesLeft == 0))
         {
             if (scene.wave < scene.maxWaves)
             {
@@ -190,28 +308,26 @@ namespace Hargon
                         float angle = (static_cast<float>(i) / spawnCount) * kTwoPi;
                         float radius = 26.0f + (i % 2) * 4.0f;
                         glm::vec3 pos(std::cos(angle) * radius, 0.9f, std::sin(angle) * radius);
-                        scene.SpawnEnemyDrone(pos, scene.wave);
+                        SceneTemplates::SpawnEnemyDrone(scene, pos, scene.wave);
                     }
-                    scene.SpawnEnergyCrystal(glm::vec3(-10.0f, 0.95f, 10.0f), true);
-                    scene.SpawnEnergyCrystal(glm::vec3( 10.0f, 0.95f, 10.0f), false);
+                    SceneTemplates::SpawnEnergyCrystal(scene, glm::vec3(-10.0f, 0.95f, 10.0f), true);
+                    SceneTemplates::SpawnEnergyCrystal(scene, glm::vec3( 10.0f, 0.95f, 10.0f), false);
 
                     scene.enemiesRemainingInWave = spawnCount;
-                    scene.hudBannerText = "WAVE " + std::to_string(scene.wave) + " INCOMING: " + std::to_string(spawnCount) + " SEEKER DRONES!";
+                    scene.hudBannerText = "WAVE " + std::to_string(scene.wave) + " INCOMING: " + std::to_string(spawnCount) + " HOSTILES!";
                     scene.hudBannerTimer = 3.5f;
                     audio.PlaySound2D("wave_start", 0.9f, 1.0f);
-                    Log::Gameplay("Started Wave " + std::to_string(scene.wave) + " with " + std::to_string(spawnCount) + " drones.");
                 }
             }
             else
             {
                 scene.gameWon = true;
                 scene.score += 1000;
-                scene.hudBannerText = "VICTORY! STARFORGE OUTPOST SECURED!";
+                scene.hudBannerText = scene.victoryText.empty() ? "VICTORY!" : scene.victoryText;
                 scene.hudBannerTimer = 999.0f;
                 audio.PlaySound2D("victory", 0.95f, 1.0f);
                 if (core)
-                    renderer.SpawnParticleBurst(core->transform.position + glm::vec3(0, 2.5f, 0), glm::vec3(0.3f, 1.0f, 0.6f), 45, 14.0f);
-                Log::Gameplay("Player won the game! Final Score: " + std::to_string(scene.score));
+                    renderer.SpawnParticleBurst(scene.GetWorldPosition(*core) + glm::vec3(0, 2.5f, 0), glm::vec3(0.3f, 1.0f, 0.6f), 45, 14.0f);
             }
         }
     }
@@ -231,25 +347,65 @@ namespace Hargon
         glm::vec3 followOffset(0.0f, 13.5f, -14.5f);
         glm::vec3 lookOffset(0.0f, 0.5f, 3.8f);
         float smooth = 8.0f;
-        std::string targetName = "PlayerRover";
+        std::string targetName;
+        CameraMode mode = CameraMode::FollowOffset;
+        float armLen = 13.0f;
+        float pitchDeg = 22.0f;
+        float yawDeg = 0.0f;
 
         if (camEntity)
         {
             ioCamera.fovDegrees = camEntity->camera.fov;
             ioCamera.nearClip = camEntity->camera.nearClip;
             ioCamera.farClip = camEntity->camera.farClip;
+            mode = camEntity->camera.mode;
             followOffset = camEntity->camera.followOffset;
             lookOffset = camEntity->camera.followLookOffset;
             smooth = camEntity->camera.smoothSpeed;
-            if (!camEntity->camera.followTargetName.empty())
-                targetName = camEntity->camera.followTargetName;
+            armLen = camEntity->camera.springArmLength;
+            pitchDeg = camEntity->camera.orbitPitch;
+            yawDeg = camEntity->camera.orbitYaw;
+            targetName = camEntity->camera.followTargetName;
+
+            if (mode == CameraMode::FixedStatic)
+            {
+                ioCamera.position = scene.GetWorldPosition(*camEntity);
+                ioCamera.forward = camEntity->transform.GetForward();
+                return;
+            }
         }
 
-        const Entity* target = const_cast<Scene&>(scene).FindEntityByName(targetName);
+        const Entity* target = targetName.empty() ? nullptr : const_cast<Scene&>(scene).FindEntityByName(targetName);
+        if (!target)
+        {
+            auto players = scene.FindEntitiesByTag("Player");
+            if (!players.empty())
+                target = scene.GetEntity(players[0]);
+        }
+
         if (target)
         {
-            glm::vec3 desiredPos = target->transform.position + followOffset;
-            glm::vec3 lookTarget = target->transform.position + lookOffset;
+            glm::vec3 targetPos = scene.GetWorldPosition(*target);
+            glm::vec3 desiredPos = targetPos + followOffset;
+            glm::vec3 lookTarget = targetPos + lookOffset;
+
+            if (mode == CameraMode::ThirdPersonOrbit)
+            {
+                float pr = glm::radians(pitchDeg);
+                float yr = glm::radians(yawDeg);
+                glm::vec3 armOffset(
+                    -std::sin(yr) * std::cos(pr) * armLen,
+                     std::sin(pr) * armLen,
+                    -std::cos(yr) * std::cos(pr) * armLen);
+                desiredPos = targetPos + armOffset;
+                lookTarget = targetPos + lookOffset;
+            }
+            else if (mode == CameraMode::FirstPerson)
+            {
+                desiredPos = targetPos + glm::vec3(0.0f, 1.4f, 0.0f);
+                lookTarget = desiredPos + target->transform.GetForward() * 10.0f;
+            }
+
             float t = (dt > 0.0f) ? std::clamp(smooth * dt, 0.0f, 1.0f) : 1.0f;
             ioCamera.position = glm::mix(ioCamera.position, desiredPos, t);
             glm::vec3 dir = lookTarget - ioCamera.position;
@@ -289,41 +445,73 @@ namespace Hargon
         if (!dl || vpSize.x < 100.0f || vpSize.y < 100.0f)
             return;
 
-        const Entity* player = scene.FindEntityByName("PlayerRover");
-        const Entity* core = scene.FindEntityByName("StarforgeCore");
+        const Entity* player = nullptr;
+        {
+            auto players = scene.FindEntitiesByTag("Player");
+            if (!players.empty())
+                player = scene.GetEntity(players[0]);
+        }
 
-        float playerHp = player ? player->gameplay.health : 0.0f;
-        float playerMaxHp = player ? std::max(1.0f, player->gameplay.maxHealth) : 100.0f;
-        float playerShield = player ? player->gameplay.shield : 0.0f;
-        float playerMaxShield = player ? std::max(1.0f, player->gameplay.maxShield) : 100.0f;
-        float coreHp = core ? core->gameplay.health : 0.0f;
-        float coreMaxHp = core ? std::max(1.0f, core->gameplay.maxHealth) : 250.0f;
+        const Entity* core = nullptr;
+        {
+            auto cores = scene.FindEntitiesByTag("Core");
+            if (!cores.empty())
+                core = scene.GetEntity(cores[0]);
+        }
 
-        // Top-Left Status Panel (Hull, Shield, Core)
-        ImVec2 p0(vpMin.x + 16.0f, vpMin.y + 16.0f);
-        dl->AddRectFilled(p0, ImVec2(p0.x + 255.0f, p0.y + 98.0f), IM_COL32(8, 14, 24, 185), 6.0f);
-        dl->AddRect(p0, ImVec2(p0.x + 255.0f, p0.y + 98.0f), IM_COL32(55, 130, 200, 160), 6.0f);
+        char buf[160];
 
-        char buf[128];
-        std::snprintf(buf, sizeof(buf), "ROVER HULL: %.0f / %.0f", playerHp, playerMaxHp);
-        DrawBar(dl, ImVec2(p0.x + 10.0f, p0.y + 10.0f), ImVec2(235.0f, 22.0f), playerHp / playerMaxHp, IM_COL32(45, 210, 115, 235), buf);
+        // Top-Left Status Panel (adapts cleanly whether Core exists or not!)
+        if (player || core)
+        {
+            float panelH = (player && core) ? 98.0f : (player ? 70.0f : 42.0f);
+            ImVec2 p0(vpMin.x + 16.0f, vpMin.y + 16.0f);
+            dl->AddRectFilled(p0, ImVec2(p0.x + 265.0f, p0.y + panelH), IM_COL32(8, 14, 24, 185), 6.0f);
+            dl->AddRect(p0, ImVec2(p0.x + 265.0f, p0.y + panelH), IM_COL32(55, 130, 200, 160), 6.0f);
 
-        std::snprintf(buf, sizeof(buf), "ENERGY SHIELD: %.0f%%", (playerShield / playerMaxShield) * 100.0f);
-        DrawBar(dl, ImVec2(p0.x + 10.0f, p0.y + 38.0f), ImVec2(235.0f, 22.0f), playerShield / playerMaxShield, IM_COL32(40, 165, 245, 235), buf);
+            float y = p0.y + 10.0f;
+            if (player)
+            {
+                float hp = player->gameplay.health;
+                float maxHp = std::max(1.0f, player->gameplay.maxHealth);
+                float sh = player->gameplay.shield;
+                float maxSh = std::max(1.0f, player->gameplay.maxShield);
 
-        std::snprintf(buf, sizeof(buf), "STARFORGE CORE: %.0f / %.0f", coreHp, coreMaxHp);
-        DrawBar(dl, ImVec2(p0.x + 10.0f, p0.y + 66.0f), ImVec2(235.0f, 22.0f), coreHp / coreMaxHp, IM_COL32(235, 175, 40, 235), buf);
+                std::snprintf(buf, sizeof(buf), "%s: %.0f / %.0f", scene.hudHealthLabel.c_str(), hp, maxHp);
+                DrawBar(dl, ImVec2(p0.x + 10.0f, y), ImVec2(245.0f, 22.0f), hp / maxHp, IM_COL32(45, 210, 115, 235), buf);
+                y += 28.0f;
 
-        // Top-Center Wave & Hostiles Badge
-        ImVec2 topCenter(vpMin.x + vpSize.x * 0.5f - 135.0f, vpMin.y + 16.0f);
-        dl->AddRectFilled(topCenter, ImVec2(topCenter.x + 270.0f, topCenter.y + 52.0f), IM_COL32(10, 18, 32, 200), 6.0f);
-        dl->AddRect(topCenter, ImVec2(topCenter.x + 270.0f, topCenter.y + 52.0f), IM_COL32(80, 185, 255, 180), 6.0f);
+                std::snprintf(buf, sizeof(buf), "%s: %.0f%%", scene.hudShieldLabel.c_str(), (sh / maxSh) * 100.0f);
+                DrawBar(dl, ImVec2(p0.x + 10.0f, y), ImVec2(245.0f, 22.0f), sh / maxSh, IM_COL32(40, 165, 245, 235), buf);
+                y += 28.0f;
+            }
+            if (core)
+            {
+                float coreHp = core->gameplay.health;
+                float coreMaxHp = std::max(1.0f, core->gameplay.maxHealth);
+                std::snprintf(buf, sizeof(buf), "%s: %.0f / %.0f", scene.hudObjectiveLabel.c_str(), coreHp, coreMaxHp);
+                DrawBar(dl, ImVec2(p0.x + 10.0f, y), ImVec2(245.0f, 22.0f), coreHp / coreMaxHp, IM_COL32(235, 175, 40, 235), buf);
+            }
+        }
 
-        std::snprintf(buf, sizeof(buf), "WAVE %d / %d", scene.wave, scene.maxWaves);
-        dl->AddText(ImVec2(topCenter.x + 92.0f, topCenter.y + 8.0f), IM_COL32(110, 225, 255, 255), buf);
+        // Top-Center Scene & Wave/Status Badge
+        ImVec2 topCenter(vpMin.x + vpSize.x * 0.5f - 165.0f, vpMin.y + 16.0f);
+        dl->AddRectFilled(topCenter, ImVec2(topCenter.x + 330.0f, topCenter.y + 52.0f), IM_COL32(10, 18, 32, 200), 6.0f);
+        dl->AddRect(topCenter, ImVec2(topCenter.x + 330.0f, topCenter.y + 52.0f), IM_COL32(80, 185, 255, 180), 6.0f);
 
-        std::snprintf(buf, sizeof(buf), "SEEKER DRONES ACTIVE: %d", scene.enemiesRemainingInWave);
-        dl->AddText(ImVec2(topCenter.x + 42.0f, topCenter.y + 28.0f), IM_COL32(255, 130, 120, 255), buf);
+        std::snprintf(buf, sizeof(buf), "%s", scene.sceneName.c_str());
+        dl->AddText(ImVec2(topCenter.x + 16.0f, topCenter.y + 8.0f), IM_COL32(110, 225, 255, 255), buf);
+
+        int remainingPickups = static_cast<int>(scene.FindEntitiesByTag("Crystal").size());
+        if (scene.maxWaves > 1)
+            std::snprintf(buf, sizeof(buf), "WAVE %d / %d   |   HOSTILES: %d", scene.wave, scene.maxWaves, scene.enemiesRemainingInWave);
+        else if (scene.enemiesRemainingInWave > 0)
+            std::snprintf(buf, sizeof(buf), "HOSTILES REMAINING: %d", scene.enemiesRemainingInWave);
+        else if (remainingPickups > 0)
+            std::snprintf(buf, sizeof(buf), "%s REMAINING: %d", scene.hudCollectibleLabel.c_str(), remainingPickups);
+        else
+            std::snprintf(buf, sizeof(buf), "ENTITIES: %zu", scene.GetEntities().size());
+        dl->AddText(ImVec2(topCenter.x + 16.0f, topCenter.y + 28.0f), IM_COL32(255, 175, 115, 255), buf);
 
         // Top-Right Score & Stats Panel
         ImVec2 topRight(vpMin.x + vpSize.x - 230.0f, vpMin.y + 16.0f);
@@ -332,9 +520,9 @@ namespace Hargon
 
         std::snprintf(buf, sizeof(buf), "SCORE:     %06d", scene.score);
         dl->AddText(ImVec2(topRight.x + 14.0f, topRight.y + 10.0f), IM_COL32(255, 225, 90, 255), buf);
-        std::snprintf(buf, sizeof(buf), "CRYSTALS:  %d", scene.crystalsCollected);
+        std::snprintf(buf, sizeof(buf), "%s:  %d", scene.hudCollectibleLabel.c_str(), scene.crystalsCollected);
         dl->AddText(ImVec2(topRight.x + 14.0f, topRight.y + 30.0f), IM_COL32(100, 235, 255, 255), buf);
-        std::snprintf(buf, sizeof(buf), "DESTROYED: %d", scene.enemiesKilled);
+        std::snprintf(buf, sizeof(buf), "DEFEATED:  %d", scene.enemiesKilled);
         dl->AddText(ImVec2(topRight.x + 14.0f, topRight.y + 50.0f), IM_COL32(220, 230, 245, 255), buf);
 
         // Banner Alert
@@ -350,12 +538,31 @@ namespace Hargon
         }
 
         // Bottom Controls Bar
-        const char* controls = "[W/S] Thrust   [A/D] Steer   [SPACE] Fire Plasma Cannons   [SHIFT] Boost   [R] Restart";
+        const char* controls = scene.hudControlsText.empty()
+            ? "[W/S] Move   [A/D] Turn   [SPACE] Action   [SHIFT] Boost   [R] Restart"
+            : scene.hudControlsText.c_str();
         ImVec2 ctrlSize = ImGui::CalcTextSize(controls);
         ImVec2 cMin(vpMin.x + (vpSize.x - ctrlSize.x) * 0.5f - 14.0f, vpMin.y + vpSize.y - 36.0f);
         ImVec2 cMax(cMin.x + ctrlSize.x + 28.0f, cMin.y + 26.0f);
         dl->AddRectFilled(cMin, cMax, IM_COL32(8, 12, 20, 185), 5.0f);
         dl->AddText(ImVec2(cMin.x + 14.0f, cMin.y + 5.0f), IM_COL32(190, 215, 240, 230), controls);
+    }
+
+    static void CopyDirectoryFilesIfExist(const std::filesystem::path& srcDir, const std::filesystem::path& dstDir)
+    {
+        if (!std::filesystem::exists(srcDir) || !std::filesystem::is_directory(srcDir))
+            return;
+        std::filesystem::create_directories(dstDir);
+        for (const auto& entry : std::filesystem::directory_iterator(srcDir))
+        {
+            if (entry.is_regular_file())
+            {
+                std::filesystem::copy_file(
+                    entry.path(),
+                    dstDir / entry.path().filename(),
+                    std::filesystem::copy_options::overwrite_existing);
+            }
+        }
     }
 
     bool GameSystem::ExportStandaloneGame(
@@ -369,82 +576,54 @@ namespace Hargon
             std::filesystem::path outPath(exportDir);
             std::filesystem::create_directories(outPath);
             std::filesystem::create_directories(outPath / "assets" / "scenes");
-            std::filesystem::create_directories(outPath / "assets" / "levels");
             std::filesystem::create_directories(outPath / "assets" / "scripts");
             std::filesystem::create_directories(outPath / "assets" / "audio");
             std::filesystem::create_directories(outPath / "assets" / "shaders");
             std::filesystem::create_directories(outPath / "saves");
 
-            // 1. Save current scene into exported assets/scenes/starforge_outpost.hscene
-            std::string relScenePath = "assets/scenes/starforge_outpost.hscene";
+            // 1. Save current scene + any sibling project scenes
+            std::string sceneFilename = config.projectName.empty() ? "startup.hscene" : (config.projectName + ".hscene");
+            std::string relScenePath = "assets/scenes/" + sceneFilename;
+            if (!config.projectRootDir.empty())
+                CopyDirectoryFilesIfExist(std::filesystem::path(config.projectRootDir) / "scenes", outPath / "assets" / "scenes");
             SceneSerializer::SaveToFile(currentScene, (outPath / relScenePath).string());
 
-            // 1b. Copy all BadLevel generated campaign levels (c1m1..c1m5, c2m1..c2m5, campaigns.json)
-            if (std::filesystem::exists("assets/levels"))
+            // 1b. Optional BadLevel assets (only when requested by project)
+            if (config.enableBadLevel)
             {
-                for (const auto& entry : std::filesystem::directory_iterator("assets/levels"))
-                {
-                    if (entry.is_regular_file())
-                    {
-                        std::filesystem::copy_file(
-                            entry.path(),
-                            outPath / "assets" / "levels" / entry.path().filename(),
-                            std::filesystem::copy_options::overwrite_existing);
-                    }
-                }
+                CopyDirectoryFilesIfExist("assets/levels", outPath / "assets" / "levels");
+                if (!config.projectRootDir.empty())
+                    CopyDirectoryFilesIfExist(std::filesystem::path(config.projectRootDir) / "levels", outPath / "assets" / "levels");
             }
 
-            // 2. Write game.json
+            // 2. Write standalone project.hproject (and game.json for compatibility)
             GameProjectConfig exportedCfg = config;
+            exportedCfg.projectRootDir = ".";
             exportedCfg.startupScene = relScenePath;
+            SceneSerializer::SaveProjectConfig(exportedCfg, (outPath / "project.hproject").string());
             SceneSerializer::SaveProjectConfig(exportedCfg, (outPath / "game.json").string());
 
-            // 3. Copy Lua scripts
+            // 3. Copy engine starter scripts + overlay project-specific scripts
             ScriptEngine::EnsureDefaultLuaScripts("assets/scripts");
-            for (const auto& entry : std::filesystem::directory_iterator("assets/scripts"))
-            {
-                if (entry.is_regular_file())
-                {
-                    std::filesystem::copy_file(
-                        entry.path(),
-                        outPath / "assets" / "scripts" / entry.path().filename(),
-                        std::filesystem::copy_options::overwrite_existing);
-                }
-            }
+            CopyDirectoryFilesIfExist("assets/scripts", outPath / "assets" / "scripts");
+            if (!config.projectRootDir.empty())
+                CopyDirectoryFilesIfExist(std::filesystem::path(config.projectRootDir) / "scripts", outPath / "assets" / "scripts");
 
             // 4. Generate/copy Audio WAV files
             AudioEngine::EnsureBuiltInSoundAssets((outPath / "assets" / "audio").string());
-            if (std::filesystem::exists("assets/audio"))
-            {
-                for (const auto& entry : std::filesystem::directory_iterator("assets/audio"))
-                {
-                    if (entry.is_regular_file())
-                    {
-                        std::filesystem::copy_file(
-                            entry.path(),
-                            outPath / "assets" / "audio" / entry.path().filename(),
-                            std::filesystem::copy_options::overwrite_existing);
-                    }
-                }
-            }
+            CopyDirectoryFilesIfExist("assets/audio", outPath / "assets" / "audio");
+            if (!config.projectRootDir.empty())
+                CopyDirectoryFilesIfExist(std::filesystem::path(config.projectRootDir) / "audio", outPath / "assets" / "audio");
 
             // 5. Copy Shaders
-            if (std::filesystem::exists("assets/shaders"))
-            {
-                for (const auto& entry : std::filesystem::directory_iterator("assets/shaders"))
-                {
-                    if (entry.is_regular_file())
-                    {
-                        std::filesystem::copy_file(
-                            entry.path(),
-                            outPath / "assets" / "shaders" / entry.path().filename(),
-                            std::filesystem::copy_options::overwrite_existing);
-                    }
-                }
-            }
+            CopyDirectoryFilesIfExist("assets/shaders", outPath / "assets" / "shaders");
 
-            // 6. Locate and copy HargonRuntime executable as StarforgeDefender.exe
+            // 6. Locate runtime binary: prefer matching project binary (e.g. ElderSlipgateFPS.exe) or fallback to HargonRuntime.exe
+            std::string exeName = config.executableName.empty() ? (config.projectName + ".exe") : config.executableName;
             std::vector<std::filesystem::path> candidateBins = {
+                std::filesystem::path("build/Release") / exeName,
+                std::filesystem::path("build/Debug") / exeName,
+                std::filesystem::path("build") / exeName,
                 "build/Release/HargonRuntime.exe",
                 "build/Debug/HargonRuntime.exe",
                 "build/HargonRuntime.exe",
@@ -454,14 +633,12 @@ namespace Hargon
             };
 
             bool copiedBinary = false;
-            std::filesystem::path destExe = outPath / "ElderSlipgateFPS.exe";
-            std::filesystem::path destExeCompat = outPath / "StarforgeDefender.exe";
+            std::filesystem::path destExe = outPath / exeName;
             for (const auto& cand : candidateBins)
             {
                 if (std::filesystem::exists(cand))
                 {
                     std::filesystem::copy_file(cand, destExe, std::filesystem::copy_options::overwrite_existing);
-                    std::filesystem::copy_file(cand, destExeCompat, std::filesystem::copy_options::overwrite_existing);
                     copiedBinary = true;
                     break;
                 }
@@ -471,43 +648,21 @@ namespace Hargon
             {
                 std::ofstream readme(outPath / "README_PLAY.txt", std::ios::out | std::ios::trunc);
                 readme << "============================================================\n";
-                readme << "  ELDER SLIPGATE: QUAKE-INSPIRED SINGLE-PLAYER FPS\n";
-                readme << "  Built & Exported with Hargon 3D Game Engine + BadLevel Generator\n";
-                readme << "  RHI: NVIDIA NVRHI (Vulkan / D3D11) | Audio: miniaudio | Scripting: Lua 5.4 | Window: GLFW\n";
+                readme << "  " << config.gameTitle << " (" << config.genre << ")\n";
+                readme << "  Built & Exported with Hargon 3D Game Engine\n";
+                readme << "  Project: " << config.projectName << " | Module: " << config.gameplayModule << "\n";
                 readme << "============================================================\n\n";
                 readme << "HOW TO PLAY:\n";
-                readme << "  Run ElderSlipgateFPS.exe\n\n";
-                readme << "CAMPAIGNS & LEVELS (Generated via BadLevel):\n";
-                readme << "  Campaign 1: The Elder Ward (c1m1 - c1m5: Gothic, Castle, Egyptian Vaults)\n";
-                readme << "  Campaign 2: The Iron Citadel (c2m1 - c2m5: Bunker, Industrial, Compound, Sci-Fi)\n\n";
-                readme << "WEAPONS (Keys 1-5):\n";
-                readme << "  [1] Runic Battle-Axe\n";
-                readme << "  [2] Double-Barrel Buckshot Shotgun\n";
-                readme << "  [3] Super Perforator Nailgun\n";
-                readme << "  [4] Ogre Rocket Launcher\n";
-                readme << "  [5] Thunderbolt Lightning Shaft\n\n";
-                readme << "CONTROLS:\n";
-                readme << "  [W/A/S/D]           : Move & Strafe\n";
-                readme << "  [Mouse / Arrows]    : Look / Turn\n";
-                readme << "  [Left Mouse / F]    : Fire Active Weapon\n";
-                readme << "  [SPACE]             : Jump\n";
-                readme << "  [1 - 5 / Scroll]    : Select Weapon\n";
-                readme << "  [F5 / F9]           : QuickSave / QuickLoad\n";
-                readme << "  [ESC]               : Game Menu, Campaign Select, Save/Load, Graphics & Sound Settings\n";
+                readme << "  Run " << exeName << "\n";
             }
 
             if (copiedBinary)
-            {
-                outStatusMessage = "Exported standalone FPS game to '" + std::filesystem::absolute(outPath).string() + "' (ElderSlipgateFPS.exe + 10 BadLevel Maps + assets)!";
-                Log::Editor(outStatusMessage);
-                return true;
-            }
+                outStatusMessage = "Exported standalone project '" + config.gameTitle + "' to '" + std::filesystem::absolute(outPath).string() + "' (" + exeName + ")!";
             else
-            {
-                outStatusMessage = "Exported game assets & game.json to '" + std::filesystem::absolute(outPath).string() + "' (HargonRuntime.exe will be placed once built).";
-                Log::Editor(outStatusMessage);
-                return true;
-            }
+                outStatusMessage = "Exported project '" + config.gameTitle + "' assets & project.hproject to '" + std::filesystem::absolute(outPath).string() + "'.";
+
+            Log::Editor(outStatusMessage);
+            return true;
         }
         catch (const std::exception& ex)
         {
