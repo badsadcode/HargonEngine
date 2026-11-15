@@ -68,9 +68,11 @@ namespace Hargon
         ej["light"] = {
             {"enabled",       e.light.enabled},
             {"isDirectional", e.light.isDirectional},
+            {"castShadows",   e.light.castShadows},
             {"color",         Vec3ToJson(e.light.color)},
             {"intensity",     e.light.intensity},
-            {"range",         e.light.range}
+            {"range",         e.light.range},
+            {"shadowBias",    e.light.shadowBias}
         };
 
         ej["camera"] = {
@@ -104,6 +106,8 @@ namespace Hargon
             {"enabled",        e.collider.enabled},
             {"isSphere",       e.collider.isSphere},
             {"isTrigger",      e.collider.isTrigger},
+            {"collisionLayer", e.collider.collisionLayer},
+            {"collisionMask",  e.collider.collisionMask},
             {"boxHalfExtents", Vec3ToJson(e.collider.boxHalfExtents)},
             {"sphereRadius",   e.collider.sphereRadius}
         };
@@ -217,9 +221,11 @@ namespace Hargon
             const auto& lj = ej["light"];
             e.light.enabled = lj.value("enabled", false);
             e.light.isDirectional = lj.value("isDirectional", false);
+            e.light.castShadows = lj.value("castShadows", true);
             e.light.color = JsonToVec3(lj["color"], glm::vec3(1.0f));
             e.light.intensity = lj.value("intensity", 2.0f);
             e.light.range = lj.value("range", 15.0f);
+            e.light.shadowBias = lj.value("shadowBias", 0.0025f);
         }
 
         if (ej.contains("camera"))
@@ -259,6 +265,8 @@ namespace Hargon
             e.collider.enabled = colj.value("enabled", false);
             e.collider.isSphere = colj.value("isSphere", true);
             e.collider.isTrigger = colj.value("isTrigger", false);
+            e.collider.collisionLayer = colj.value("collisionLayer", 1u);
+            e.collider.collisionMask = colj.value("collisionMask", 0xFFFFFFFFu);
             e.collider.boxHalfExtents = JsonToVec3(colj["boxHalfExtents"], glm::vec3(0.6f));
             e.collider.sphereRadius = colj.value("sphereRadius", 0.75f);
         }
@@ -375,7 +383,8 @@ namespace Hargon
             {"adjustmentBrightness", scene.worldEnv.adjustmentBrightness},
             {"adjustmentContrast",   scene.worldEnv.adjustmentContrast},
             {"adjustmentSaturation", scene.worldEnv.adjustmentSaturation},
-            {"frustumCullingEnabled",scene.worldEnv.frustumCullingEnabled}
+            {"frustumCullingEnabled",scene.worldEnv.frustumCullingEnabled},
+            {"shadowsEnabled",       scene.worldEnv.shadowsEnabled}
         };
 
         json entitiesArr = json::array();
@@ -440,6 +449,7 @@ namespace Hargon
                 scene.worldEnv.adjustmentContrast    = we.value("adjustmentContrast", 1.04f);
                 scene.worldEnv.adjustmentSaturation  = we.value("adjustmentSaturation", 1.08f);
                 scene.worldEnv.frustumCullingEnabled = we.value("frustumCullingEnabled", true);
+                scene.worldEnv.shadowsEnabled        = we.value("shadowsEnabled", true);
             }
 
             std::unordered_map<EntityID, EntityID> oldToNewId;

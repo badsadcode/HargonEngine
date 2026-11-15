@@ -30,6 +30,7 @@ namespace Hargon
     struct alignas(16) SceneCBData
     {
         glm::mat4 viewProj;
+        glm::mat4 lightViewProj;
         glm::vec4 cameraPos;       // xyz = pos, w = time
         glm::vec4 dirLightDir;     // xyz = dir toward light, w = intensity
         glm::vec4 dirLightColor;   // xyz = color, w = ambientStrength
@@ -39,7 +40,13 @@ namespace Hargon
         glm::vec4 pointLightColorIntensity[8];
         glm::vec4 envParams0;      // x = tonemapMode, y = exposure, z = white, w = glowIntensity
         glm::vec4 envParams1;      // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
-        glm::vec4 envParams2;      // x = brightness, y = saturation, z = glowBloom, w = 0
+        glm::vec4 envParams2;      // x = brightness, y = saturation, z = glowBloom, w = shadowStrength
+        glm::vec4 shadowParams;    // x = shadowBias, y = 1.0/shadowSize, z = shadowsEnabled, w = 0
+    };
+
+    struct alignas(16) ShadowCBData
+    {
+        glm::mat4 lightViewProj;
     };
 
     // Godot-inspired Fast Frustum Culling (servers/rendering/renderer_scene_cull.h)
@@ -141,6 +148,9 @@ namespace Hargon
         m_PBRPS = m_RHI->CreateShader(
             nvrhi::ShaderType::Pixel, "PBRLit_PS", "PSMain",
             g_PBRLit_PS_SPV, sizeof(g_PBRLit_PS_SPV), "assets/shaders/PBRLit.hlsl");
+        m_ShadowVS = m_RHI->CreateShader(
+            nvrhi::ShaderType::Vertex, "ShadowDepth_VS", "VSMain",
+            g_ShadowDepth_VS_SPV, sizeof(g_ShadowDepth_VS_SPV), "assets/shaders/ShadowDepth.hlsl");
 
         m_SkyboxVS = m_RHI->CreateShader(
             nvrhi::ShaderType::Vertex, "Skybox_VS", "VSMain",
@@ -156,7 +166,7 @@ namespace Hargon
             nvrhi::ShaderType::Pixel, "LineGizmo_PS", "PSMain",
             g_LineGizmo_PS_SPV, sizeof(g_LineGizmo_PS_SPV), "assets/shaders/LineGizmo.hlsl", Shaders::kLineGizmoHLSL);
 
-        if (!m_PBRVS || !m_PBRPS || !m_SkyboxVS || !m_SkyboxPS || !m_LineVS || !m_LinePS)
+        if (!m_PBRVS || !m_PBRPS || !m_ShadowVS || !m_SkyboxVS || !m_SkyboxPS || !m_LineVS || !m_LinePS)
         {
             Log::Error("Renderer3D failed to create one or more shaders!");
             return false;
@@ -204,6 +214,7 @@ namespace Hargon
         // 3. Volatile Constant Buffers
         m_SceneCB  = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(SceneCBData),  "SceneCB",  64));
         m_ObjectCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ObjectCBData), "ObjectCB", 2048));
+        m_ShadowCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(ShadowCBData), "ShadowCB", 64));
         m_SkyboxCB = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(SkyboxCBData), "SkyboxCB", 64));
         m_LineCB   = m_Device->createBuffer(nvrhi::utils::CreateVolatileConstantBufferDesc(sizeof(LineCBData),   "LineCB",   64));
 
@@ -234,8 +245,33 @@ namespace Hargon
         sampDesc.setAllAddressModes(nvrhi::SamplerAddressMode::Wrap);
         m_LinearSampler = m_Device->createSampler(sampDesc);
 
+        // 5b. 2048x2048 Directional Shadow Map Texture + Framebuffer + Clamp Sampler
+        nvrhi::TextureDesc shadowDesc;
+        shadowDesc.width = 2048;
+        shadowDesc.height = 2048;
+        shadowDesc.format = nvrhi::Format::D32;
+        shadowDesc.isRenderTarget = true;
+        shadowDesc.isShaderResource = true;
+        shadowDesc.debugName = "DirectionalShadowMap";
+        shadowDesc.initialState = nvrhi::ResourceStates::ShaderResource;
+        shadowDesc.keepInitialState = true;
+        shadowDesc.useClearValue = true;
+        shadowDesc.clearValue = nvrhi::Color(1.0f, 0.0f, 0.0f, 0.0f);
+        m_ShadowMapTexture = m_Device->createTexture(shadowDesc);
+
+        nvrhi::FramebufferDesc shadowFbDesc;
+        shadowFbDesc.setDepthAttachment(m_ShadowMapTexture);
+        m_ShadowFramebuffer = m_Device->createFramebuffer(shadowFbDesc);
+
+        nvrhi::SamplerDesc shadowSampDesc;
+        shadowSampDesc.setAllFilters(false);
+        shadowSampDesc.setAllAddressModes(nvrhi::SamplerAddressMode::Clamp);
+        m_ShadowClampSampler = m_Device->createSampler(shadowSampDesc);
+
         nvrhi::CommandListHandle initCmd = m_Device->createCommandList();
         initCmd->open();
+
+        nvrhi::utils::ClearDepthStencilAttachment(initCmd, m_ShadowFramebuffer, 1.0f, 0);
 
         uint32_t whitePixels[16];
         std::fill(std::begin(whitePixels), std::end(whitePixels), 0xFFFFFFFFu);
@@ -260,9 +296,36 @@ namespace Hargon
                 nvrhi::BindingSetItem::ConstantBuffer(0, m_SceneCB),
                 nvrhi::BindingSetItem::ConstantBuffer(1, m_ObjectCB),
                 nvrhi::BindingSetItem::Texture_SRV(0, m_WhiteTexture),
-                nvrhi::BindingSetItem::Sampler(0, m_LinearSampler)
+                nvrhi::BindingSetItem::Texture_SRV(1, m_ShadowMapTexture),
+                nvrhi::BindingSetItem::Sampler(0, m_LinearSampler),
+                nvrhi::BindingSetItem::Sampler(1, m_ShadowClampSampler)
             };
             nvrhi::utils::CreateBindingSetAndLayout(m_Device, nvrhi::ShaderType::All, 0, bset, m_PBRBindingLayout, m_PBRBindingSet);
+        }
+
+        {
+            nvrhi::BindingSetDesc bset;
+            bset.bindings = {
+                nvrhi::BindingSetItem::ConstantBuffer(0, m_ShadowCB),
+                nvrhi::BindingSetItem::ConstantBuffer(1, m_ObjectCB)
+            };
+            nvrhi::utils::CreateBindingSetAndLayout(m_Device, nvrhi::ShaderType::Vertex, 0, bset, m_ShadowBindingLayout, m_ShadowBindingSet);
+
+            nvrhi::GraphicsPipelineDesc desc;
+            desc.primType = nvrhi::PrimitiveType::TriangleList;
+            desc.inputLayout = m_MeshInputLayout;
+            desc.VS = m_ShadowVS;
+            desc.PS = nullptr;
+            desc.bindingLayouts = { m_ShadowBindingLayout };
+            desc.renderState.rasterState
+                .setCullNone()
+                .setDepthBias(4)
+                .setSlopeScaleDepthBias(1.5f);
+            desc.renderState.depthStencilState
+                .setDepthTestEnable(true)
+                .setDepthWriteEnable(true)
+                .setDepthFunc(nvrhi::ComparisonFunc::LessOrEqual);
+            m_ShadowPipeline = m_Device->createGraphicsPipeline(desc, m_ShadowFramebuffer);
         }
 
         {
@@ -291,11 +354,14 @@ namespace Hargon
         m_PrimitiveMeshes.clear();
         m_CustomMeshes.clear();
 
+        m_ShadowPipeline = nullptr;
         m_PBRPipeline = nullptr;
         m_SkyboxPipeline = nullptr;
         m_LinePipeline = nullptr;
         m_GizmoPipeline = nullptr;
 
+        m_ShadowBindingSet = nullptr;
+        m_ShadowBindingLayout = nullptr;
         m_PBRBindingSet = nullptr;
         m_PBRBindingLayout = nullptr;
         m_SkyboxBindingSet = nullptr;
@@ -303,6 +369,9 @@ namespace Hargon
         m_LineBindingSet = nullptr;
         m_LineBindingLayout = nullptr;
 
+        m_ShadowFramebuffer = nullptr;
+        m_ShadowMapTexture = nullptr;
+        m_ShadowClampSampler = nullptr;
         m_WhiteTexture = nullptr;
         m_LinearSampler = nullptr;
 
@@ -310,6 +379,7 @@ namespace Hargon
         m_DynamicGizmoVB = nullptr;
         m_SceneCB = nullptr;
         m_ObjectCB = nullptr;
+        m_ShadowCB = nullptr;
         m_SkyboxCB = nullptr;
         m_LineCB = nullptr;
 
@@ -318,6 +388,7 @@ namespace Hargon
 
         m_PBRVS = nullptr;
         m_PBRPS = nullptr;
+        m_ShadowVS = nullptr;
         m_SkyboxVS = nullptr;
         m_SkyboxPS = nullptr;
         m_LineVS = nullptr;
@@ -715,6 +786,8 @@ namespace Hargon
         glm::vec3 sunDir = glm::normalize(glm::vec3(0.45f, 0.78f, -0.42f));
         glm::vec3 sunColor(1.0f, 0.95f, 0.85f);
         float sunIntensity = 2.5f;
+        bool dirCastShadows = true;
+        float dirShadowBias = 0.0025f;
 
         SceneCBData sceneCB{};
         sceneCB.viewProj = camera.GetViewProjectionMatrix();
@@ -741,10 +814,12 @@ namespace Hargon
             {
                 glm::vec3 fwd = e.transform.GetForward();
                 sunDir = glm::normalize(-fwd);
-                if (sunDir.y < 0.1f)
-                    sunDir = glm::normalize(glm::vec3(0.45f, 0.78f, -0.42f));
+                if (sunDir.y < 0.12f)
+                    sunDir = glm::normalize(glm::vec3(sunDir.x, 0.35f, sunDir.z));
                 sunColor = e.light.color;
                 sunIntensity = e.light.intensity;
+                dirCastShadows = e.light.castShadows;
+                dirShadowBias = e.light.shadowBias;
             }
             else
             {
@@ -770,6 +845,68 @@ namespace Hargon
             ++pointLightCount;
         }
 
+        // 0. Real-Time 2048x2048 Directional Shadow Depth Pass (Godot DirectionalLight3D-inspired)
+        bool shadowsOn = scene.worldEnv.shadowsEnabled && dirCastShadows && m_ShadowPipeline && m_ShadowFramebuffer;
+        glm::mat4 lightViewProj(1.0f);
+        if (shadowsOn)
+        {
+            glm::vec3 flatFwd(camera.forward.x, 0.0f, camera.forward.z);
+            float ffLen = glm::length(flatFwd);
+            glm::vec3 focus = camera.position + (ffLen > 0.05f ? (flatFwd / ffLen) * 14.0f : glm::vec3(0.0f));
+            focus.y = 0.0f;
+
+            float orthoHalf = std::clamp(scene.arenaHalfSize * 1.1f, 28.0f, 44.0f);
+            glm::vec3 lightUp = (std::abs(sunDir.y) > 0.98f) ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+            glm::mat4 tmpView = glm::lookAtLH(focus + sunDir * 55.0f, focus, lightUp);
+            float texelWorld = (2.0f * orthoHalf) / 2048.0f;
+            glm::vec3 rightAxis(tmpView[0][0], tmpView[1][0], tmpView[2][0]);
+            glm::vec3 upAxis(tmpView[0][1], tmpView[1][1], tmpView[2][1]);
+            float sx = std::floor(glm::dot(focus, rightAxis) / texelWorld + 0.5f) * texelWorld;
+            float sy = std::floor(glm::dot(focus, upAxis) / texelWorld + 0.5f) * texelWorld;
+            glm::vec3 snappedFocus = rightAxis * sx + upAxis * sy + sunDir * glm::dot(focus, sunDir);
+
+            glm::mat4 lightView = glm::lookAtLH(snappedFocus + sunDir * 55.0f, snappedFocus, lightUp);
+            glm::mat4 lightProj = glm::orthoLH_ZO(-orthoHalf, orthoHalf, -orthoHalf, orthoHalf, 1.0f, 130.0f);
+            lightViewProj = lightProj * lightView;
+
+            ShadowCBData shadowCB{ lightViewProj };
+            cmd->writeBuffer(m_ShadowCB, &shadowCB, sizeof(shadowCB));
+            nvrhi::utils::ClearDepthStencilAttachment(cmd, m_ShadowFramebuffer, 1.0f, 0);
+
+            nvrhi::ViewportState shadowVp = nvrhi::ViewportState()
+                .addViewportAndScissorRect(nvrhi::Viewport(2048.0f, 2048.0f));
+
+            for (const auto& e : scene.GetEntities())
+            {
+                if (!e.alive || !e.mesh.enabled) continue;
+                if (e.tag.tag == "ViewModel" || e.tag.tag == "MuzzleFlash" || e.tag.tag == "Projectile" || e.tag.tag == "EnemyProjectile")
+                    continue;
+
+                const GPUMesh& gpuMesh = GetOrCreateMesh(cmd, e.mesh);
+                if (!gpuMesh.vertexBuffer || !gpuMesh.indexBuffer || gpuMesh.indexCount == 0)
+                    continue;
+
+                ObjectCBData objCB{};
+                objCB.model = scene.GetWorldMatrix(e);
+                cmd->writeBuffer(m_ObjectCB, &objCB, sizeof(objCB));
+
+                nvrhi::GraphicsState state;
+                state.pipeline = m_ShadowPipeline;
+                state.framebuffer = m_ShadowFramebuffer;
+                state.viewport = shadowVp;
+                state.bindings = { m_ShadowBindingSet };
+                state.vertexBuffers = { { gpuMesh.vertexBuffer, 0, 0 } };
+                state.indexBuffer = { gpuMesh.indexBuffer, nvrhi::Format::R32_UINT, 0 };
+                cmd->setGraphicsState(state);
+
+                nvrhi::DrawArguments args;
+                args.vertexCount = gpuMesh.indexCount;
+                cmd->drawIndexed(args);
+                ++m_Stats.drawCalls;
+            }
+        }
+
+        sceneCB.lightViewProj = lightViewProj;
         sceneCB.dirLightDir = glm::vec4(sunDir, sunIntensity);
         sceneCB.dirLightColor = glm::vec4(sunColor, scene.ambientIntensity);
         sceneCB.skyColor = glm::vec4(scene.skyHorizonColor, scene.fogDensity);
@@ -788,6 +925,11 @@ namespace Hargon
             scene.worldEnv.adjustmentEnabled ? scene.worldEnv.adjustmentBrightness : 1.0f,
             scene.worldEnv.adjustmentEnabled ? scene.worldEnv.adjustmentSaturation : 1.0f,
             scene.worldEnv.glowEnabled ? scene.worldEnv.glowBloom : 0.0f,
+            0.70f);
+        sceneCB.shadowParams = glm::vec4(
+            dirShadowBias,
+            1.0f / 2048.0f,
+            shadowsOn ? 1.0f : 0.0f,
             0.0f);
         m_Stats.activePointLights = static_cast<uint32_t>(pointLightCount);
 

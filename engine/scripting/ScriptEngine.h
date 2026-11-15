@@ -2,6 +2,7 @@
 #include "../scene/Scene.h"
 #include <string>
 #include <functional>
+#include <unordered_map>
 
 struct lua_State;
 
@@ -30,6 +31,12 @@ namespace Hargon
         bool ReloadAllScripts(Scene& scene);
         bool ExecuteSnippet(const std::string& luaCode);
 
+        // Godot Timer-inspired named countdown timers accessible from Lua & C++
+        void CreateTimer(const std::string& name, float seconds);
+        bool IsTimerReady(const std::string& name) const;
+        float GetTimerLeft(const std::string& name) const;
+        void ClearTimers() { m_Timers.clear(); }
+
         static void EnsureDefaultLuaScripts(const std::string& scriptDir = "assets/scripts");
 
         // Internal accessors for C functions
@@ -48,5 +55,7 @@ namespace Hargon
         Window* m_Window = nullptr;
         AudioEngine* m_Audio = nullptr;
         ParticleBurstCallback m_ParticleCallback;
+        std::unordered_map<std::string, float> m_Timers;
     };
 }
+

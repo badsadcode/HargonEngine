@@ -110,6 +110,7 @@ namespace Hargon
         // Shaders
         nvrhi::ShaderHandle m_PBRVS;
         nvrhi::ShaderHandle m_PBRPS;
+        nvrhi::ShaderHandle m_ShadowVS;
         nvrhi::ShaderHandle m_SkyboxVS;
         nvrhi::ShaderHandle m_SkyboxPS;
         nvrhi::ShaderHandle m_LineVS;
@@ -122,6 +123,7 @@ namespace Hargon
         // Constant Buffers
         nvrhi::BufferHandle m_SceneCB;
         nvrhi::BufferHandle m_ObjectCB;
+        nvrhi::BufferHandle m_ShadowCB;
         nvrhi::BufferHandle m_SkyboxCB;
         nvrhi::BufferHandle m_LineCB;
 
@@ -130,13 +132,18 @@ namespace Hargon
         nvrhi::BufferHandle m_DynamicGizmoVB;
         uint32_t m_MaxLineVertices = 16384;
 
-        // Default white texture + sampler
+        // Default white texture + directional shadow map + samplers
         nvrhi::TextureHandle m_WhiteTexture;
+        nvrhi::TextureHandle m_ShadowMapTexture;
+        nvrhi::FramebufferHandle m_ShadowFramebuffer;
         nvrhi::SamplerHandle m_LinearSampler;
+        nvrhi::SamplerHandle m_ShadowClampSampler;
 
         // Binding layouts and sets
         nvrhi::BindingLayoutHandle m_PBRBindingLayout;
         nvrhi::BindingSetHandle m_PBRBindingSet;
+        nvrhi::BindingLayoutHandle m_ShadowBindingLayout;
+        nvrhi::BindingSetHandle m_ShadowBindingSet;
         nvrhi::BindingLayoutHandle m_SkyboxBindingLayout;
         nvrhi::BindingSetHandle m_SkyboxBindingSet;
         nvrhi::BindingLayoutHandle m_LineBindingLayout;
@@ -145,6 +152,7 @@ namespace Hargon
         // Graphics pipelines (rebuilt automatically if target FramebufferInfo changes)
         nvrhi::FramebufferInfo m_CachedFbInfo;
         bool m_HasCachedFbInfo = false;
+        nvrhi::GraphicsPipelineHandle m_ShadowPipeline;
         nvrhi::GraphicsPipelineHandle m_PBRPipeline;
         nvrhi::GraphicsPipelineHandle m_SkyboxPipeline;
         nvrhi::GraphicsPipelineHandle m_LinePipeline;

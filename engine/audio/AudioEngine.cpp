@@ -16,7 +16,12 @@ namespace Hargon
 
     struct AudioEngine::Impl
     {
+        static constexpr size_t kVoicePoolSize = 32;
         ma_engine engine{};
+        ma_sound voices[kVoicePoolSize]{};
+        bool voiceActive[kVoicePoolSize]{};
+        size_t nextVoice = 0;
+        uint32_t rngState = 0xA511E9B3u;
     };
 
     static void WriteWavFile(const std::string& path, const std::vector<int16_t>& samples, uint32_t sampleRate = 44100)
@@ -408,7 +413,17 @@ namespace Hargon
         if (m_Impl)
         {
             if (m_Initialized)
+            {
+                for (size_t i = 0; i < Impl::kVoicePoolSize; ++i)
+                {
+                    if (m_Impl->voiceActive[i])
+                    {
+                        ma_sound_uninit(&m_Impl->voices[i]);
+                        m_Impl->voiceActive[i] = false;
+                    }
+                }
                 ma_engine_uninit(&m_Impl->engine);
+            }
             delete m_Impl;
             m_Impl = nullptr;
         }
@@ -428,23 +443,96 @@ namespace Hargon
         return m_AudioDir + "/laser.wav";
     }
 
-    void AudioEngine::PlaySound2D(const std::string& soundName, float /*volume*/, float /*pitch*/)
+    void AudioEngine::PlaySound2D(const std::string& soundName, float volume, float pitch)
     {
         ++m_PlayedSoundCount;
         if (!m_Initialized || m_Muted || !m_Impl)
             return;
 
         std::string path = ResolveSoundPath(soundName);
-        ma_engine_play_sound(&m_Impl->engine, path.c_str(), nullptr);
+        size_t slot = m_Impl->nextVoice;
+        m_Impl->nextVoice = (m_Impl->nextVoice + 1) % Impl::kVoicePoolSize;
+
+        if (m_Impl->voiceActive[slot])
+        {
+            ma_sound_uninit(&m_Impl->voices[slot]);
+            m_Impl->voiceActive[slot] = false;
+        }
+
+        if (ma_sound_init_from_file(&m_Impl->engine, path.c_str(), MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, nullptr, nullptr, &m_Impl->voices[slot]) == MA_SUCCESS)
+        {
+            m_Impl->voiceActive[slot] = true;
+            ma_sound_set_spatialization_enabled(&m_Impl->voices[slot], MA_FALSE);
+            ma_sound_set_volume(&m_Impl->voices[slot], std::clamp(volume * m_SFXVolume, 0.0f, 2.0f));
+            ma_sound_set_pitch(&m_Impl->voices[slot], std::clamp(pitch, 0.25f, 3.0f));
+            ma_sound_start(&m_Impl->voices[slot]);
+        }
+        else
+        {
+            ma_engine_play_sound(&m_Impl->engine, path.c_str(), nullptr);
+        }
     }
 
-    void AudioEngine::PlaySound3D(const std::string& soundName, const glm::vec3& position, float volume, float pitch)
+    void AudioEngine::PlaySound3D(
+        const std::string& soundName,
+        const glm::vec3& position,
+        float volume,
+        float pitch,
+        int attenuationModel,
+        float unitSize,
+        float maxDistance,
+        float pitchRandomness)
     {
         float dist = glm::length(position - m_ListenerPos);
-        if (dist > 65.0f)
+        if (maxDistance > 0.0f && dist > maxDistance && attenuationModel != 3)
             return;
 
-        PlaySound2D(soundName, volume, pitch);
+        // Compute Godot AudioStreamPlayer3D-inspired pitch randomization + attenuation gain
+        float finalPitch = pitch;
+        if (pitchRandomness > 0.001f && m_Impl)
+        {
+            m_Impl->rngState = m_Impl->rngState * 1664525u + 1013904223u;
+            float u = (static_cast<float>(m_Impl->rngState & 0xFFFFu) / 32768.0f) - 1.0f;
+            finalPitch = std::clamp(pitch + u * pitchRandomness, 0.35f, 2.5f);
+        }
+
+        float refDist = std::max(0.5f, unitSize);
+        float attenGain = 1.0f;
+        if (attenuationModel == 0) // InverseDistance
+            attenGain = refDist / std::max(refDist, dist);
+        else if (attenuationModel == 1) // InverseSquare
+            attenGain = (refDist * refDist) / std::max(refDist * refDist, dist * dist);
+        else if (attenuationModel == 2) // Logarithmic
+            attenGain = std::clamp(1.0f - std::log10(std::max(1.0f, dist / refDist + 1.0f)) * 0.45f, 0.05f, 1.0f);
+
+        ++m_PlayedSoundCount;
+        if (!m_Initialized || m_Muted || !m_Impl)
+            return;
+
+        std::string path = ResolveSoundPath(soundName);
+        size_t slot = m_Impl->nextVoice;
+        m_Impl->nextVoice = (m_Impl->nextVoice + 1) % Impl::kVoicePoolSize;
+
+        if (m_Impl->voiceActive[slot])
+        {
+            ma_sound_uninit(&m_Impl->voices[slot]);
+            m_Impl->voiceActive[slot] = false;
+        }
+
+        if (ma_sound_init_from_file(&m_Impl->engine, path.c_str(), MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, nullptr, nullptr, &m_Impl->voices[slot]) == MA_SUCCESS)
+        {
+            m_Impl->voiceActive[slot] = true;
+            ma_sound_set_spatialization_enabled(&m_Impl->voices[slot], MA_TRUE);
+            ma_sound_set_position(&m_Impl->voices[slot], position.x, position.y, position.z);
+            ma_sound_set_attenuation_model(&m_Impl->voices[slot], ma_attenuation_model_none); // exact curve applied via attenGain
+            ma_sound_set_volume(&m_Impl->voices[slot], std::clamp(volume * attenGain * m_SFXVolume, 0.0f, 2.0f));
+            ma_sound_set_pitch(&m_Impl->voices[slot], finalPitch);
+            ma_sound_start(&m_Impl->voices[slot]);
+        }
+        else
+        {
+            ma_engine_play_sound(&m_Impl->engine, path.c_str(), nullptr);
+        }
     }
 
     void AudioEngine::SetListenerTransform(const glm::vec3& position, const glm::vec3& forward)

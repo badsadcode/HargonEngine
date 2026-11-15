@@ -16,7 +16,15 @@ namespace Hargon
         void Shutdown();
 
         void PlaySound2D(const std::string& soundName, float volume = 0.8f, float pitch = 1.0f);
-        void PlaySound3D(const std::string& soundName, const glm::vec3& position, float volume = 0.85f, float pitch = 1.0f);
+        void PlaySound3D(
+            const std::string& soundName,
+            const glm::vec3& position,
+            float volume = 0.85f,
+            float pitch = 1.0f,
+            int attenuationModel = 0,
+            float unitSize = 10.0f,
+            float maxDistance = 65.0f,
+            float pitchRandomness = 0.0f);
 
         void SetListenerTransform(const glm::vec3& position, const glm::vec3& forward);
         void SetMasterVolume(float volume);

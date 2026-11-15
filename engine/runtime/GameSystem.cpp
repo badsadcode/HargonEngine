@@ -1,5 +1,6 @@
 #include "GameSystem.h"
 #include "../project/SceneTemplates.h"
+#include "../physics/PhysicsSystem.h"
 #include "../core/Window.h"
 #include "../core/Log.h"
 #include <filesystem>
@@ -153,6 +154,24 @@ namespace Hargon
 
         for (auto& e : scene.GetEntities())
         {
+            if (e.alive && e.audioSource.enabled && e.audioSource.playOnAwake && !e.audioSource.awakePlayed && scene.ShouldProcessEntity(e, false))
+            {
+                e.audioSource.awakePlayed = true;
+                glm::vec3 wp = scene.GetWorldPosition(e);
+                if (e.audioSource.spatial)
+                {
+                    audio.PlaySound3D(
+                        e.audioSource.soundName, wp,
+                        e.audioSource.volume, e.audioSource.pitch,
+                        e.audioSource.attenuationModel, e.audioSource.unitSize,
+                        e.audioSource.maxDistance, e.audioSource.pitchRandomness);
+                }
+                else
+                {
+                    audio.PlaySound2D(e.audioSource.soundName, e.audioSource.volume, e.audioSource.pitch);
+                }
+            }
+
             if (!scene.ShouldProcessEntity(e, false) || !e.gameplay.enabled)
                 continue;
 
@@ -393,12 +412,18 @@ namespace Hargon
             {
                 float pr = glm::radians(pitchDeg);
                 float yr = glm::radians(yawDeg);
-                glm::vec3 armOffset(
-                    -std::sin(yr) * std::cos(pr) * armLen,
-                     std::sin(pr) * armLen,
-                    -std::cos(yr) * std::cos(pr) * armLen);
-                desiredPos = targetPos + armOffset;
+                glm::vec3 armDir(
+                    -std::sin(yr) * std::cos(pr),
+                     std::sin(pr),
+                    -std::cos(yr) * std::cos(pr));
                 lookTarget = targetPos + lookOffset;
+                float effectiveArm = armLen;
+                // Godot SpringArm3D-inspired collision pull-in against world geometry
+                PhysicsRaycastHit hit = PhysicsSystem::Raycast(
+                    scene, lookTarget, armDir, armLen, 0xFFFFFFFFu, target->id, "Projectile");
+                if (hit.hit)
+                    effectiveArm = std::clamp(hit.distance - 0.55f, 1.8f, armLen);
+                desiredPos = lookTarget + armDir * effectiveArm;
             }
             else if (mode == CameraMode::FirstPerson)
             {

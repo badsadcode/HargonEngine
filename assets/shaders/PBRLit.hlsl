@@ -1,6 +1,7 @@
 cbuffer SceneCB : register(b0)
 {
     row_major float4x4 u_ViewProj;
+    row_major float4x4 u_LightViewProj;
     float4 u_CameraPos;       // xyz = cam pos, w = time
     float4 u_DirLightDir;     // xyz = dir toward light, w = intensity
     float4 u_DirLightColor;   // xyz = color, w = ambientStrength
@@ -10,7 +11,8 @@ cbuffer SceneCB : register(b0)
     float4 u_PointLightColorIntensity[8];
     float4 u_EnvParams0;      // x = tonemapMode, y = exposure, z = white, w = glowIntensity
     float4 u_EnvParams1;      // x = fogHeight, y = fogHeightDensity, z = fogSunScatter, w = contrast
-    float4 u_EnvParams2;      // x = brightness, y = saturation, z = glowBloom, w = 0
+    float4 u_EnvParams2;      // x = brightness, y = saturation, z = glowBloom, w = shadowStrength
+    float4 u_ShadowParams;    // x = shadowBias, y = 1.0/shadowSize, z = shadowsEnabled, w = 0
 };
 
 cbuffer ObjectCB : register(b1)
@@ -23,7 +25,9 @@ cbuffer ObjectCB : register(b1)
 };
 
 Texture2D g_AlbedoTex : register(t0);
+Texture2D<float> g_ShadowMap : register(t1);
 SamplerState g_Sampler : register(s0);
+SamplerState g_ShadowSampler : register(s1);
 
 struct VSInput
 {
@@ -101,6 +105,42 @@ float3 EvaluateLight(float3 N, float3 V, float3 L, float3 radiance, float3 albed
     float3 kD = (float3(1.0f, 1.0f, 1.0f) - kS) * (1.0f - metallic);
     float NdotL = max(dot(N, L), 0.0f);
     return (kD * albedo / PI + specular) * radiance * NdotL;
+}
+
+float ComputeDirectionalShadow(float3 worldPos, float3 N, float3 Ldir)
+{
+    if (u_ShadowParams.z < 0.5f)
+        return 1.0f;
+
+    float4 sc = mul(float4(worldPos, 1.0f), u_LightViewProj);
+    float3 proj = sc.xyz / max(sc.w, 0.0001f);
+    float2 uv = float2(proj.x * 0.5f + 0.5f, -proj.y * 0.5f + 0.5f);
+
+    if (uv.x <= 0.001f || uv.x >= 0.999f || uv.y <= 0.001f || uv.y >= 0.999f || proj.z <= 0.001f || proj.z >= 0.999f)
+        return 1.0f;
+
+    float2 edgeDist = min(uv, 1.0f - uv);
+    float edgeFade = smoothstep(0.0f, 0.08f, min(edgeDist.x, edgeDist.y));
+
+    float cosTheta = saturate(dot(N, Ldir));
+    float bias = clamp(u_ShadowParams.x * (1.25f - 0.8f * cosTheta), 0.0005f, 0.015f);
+    float currentDepth = proj.z - bias;
+    float texel = max(u_ShadowParams.y, 1.0f / 2048.0f);
+
+    // 3x3 PCF filter inspired by Godot DirectionalLight3D soft shadows
+    float sum = 0.0f;
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            float sampled = g_ShadowMap.SampleLevel(g_ShadowSampler, uv + float2(x, y) * texel * 1.35f, 0).r;
+            sum += (currentDepth <= sampled) ? 1.0f : 0.0f;
+        }
+    }
+    float pcf = sum / 9.0f;
+    return lerp(1.0f, pcf, edgeFade * saturate(u_EnvParams2.w));
 }
 
 float4 PSMain(PSInput input) : SV_Target
@@ -267,10 +307,11 @@ float4 PSMain(PSInput input) : SV_Target
     float3 F0 = float3(0.04f, 0.04f, 0.04f);
     F0 = lerp(F0, baseColor, metallic);
 
-    // Directional Sun Light
+    // Directional Sun Light with 3x3 PCF Real-Time Shadowing
     float3 Ldir = normalize(u_DirLightDir.xyz);
     float3 dirRadiance = u_DirLightColor.rgb * u_DirLightDir.w;
-    float3 Lo = EvaluateLight(N, V, Ldir, dirRadiance, baseColor, metallic, roughness, F0);
+    float shadowFactor = ComputeDirectionalShadow(input.worldPos, N, Ldir);
+    float3 Lo = EvaluateLight(N, V, Ldir, dirRadiance, baseColor, metallic, roughness, F0) * shadowFactor;
 
     // Dynamic Point Lights
     int pointCount = min((int)(u_GroundColor.w + 0.5f), 8);
@@ -290,10 +331,10 @@ float4 PSMain(PSInput input) : SV_Target
         }
     }
 
-    // Hemisphere Ambient Lighting
+    // Hemisphere Ambient Lighting (with subtle shadow occlusion for grounded contact contrast)
     float hemi = N.y * 0.5f + 0.5f;
     float3 ambientIrradiance = lerp(u_GroundColor.rgb, u_SkyColor.rgb, hemi) * u_DirLightColor.w;
-    float3 ambient = ambientIrradiance * baseColor;
+    float3 ambient = ambientIrradiance * baseColor * lerp(0.82f, 1.0f, shadowFactor);
 
     // Subtle Fresnel rim for 3D readability
     float rimTerm = pow(1.0f - max(dot(N, V), 0.0f), 3.5f);

@@ -1,5 +1,6 @@
 #include "ScriptEngine.h"
 #include "../project/SceneTemplates.h"
+#include "../physics/PhysicsSystem.h"
 #include "../core/Window.h"
 #include "../core/InputMap.h"
 #include "../core/Log.h"
@@ -429,6 +430,91 @@ namespace Hargon
         return 1;
     }
 
+    static int Lua_Raycast(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        float ox = static_cast<float>(luaL_checknumber(L, 1));
+        float oy = static_cast<float>(luaL_checknumber(L, 2));
+        float oz = static_cast<float>(luaL_checknumber(L, 3));
+        float dx = static_cast<float>(luaL_checknumber(L, 4));
+        float dy = static_cast<float>(luaL_checknumber(L, 5));
+        float dz = static_cast<float>(luaL_checknumber(L, 6));
+        float maxDist = static_cast<float>(luaL_optnumber(L, 7, 100.0));
+        EntityID ignoreId = static_cast<EntityID>(luaL_optinteger(L, 8, kInvalidEntity));
+
+        PhysicsRaycastHit hit;
+        if (se && se->GetScene())
+            hit = PhysicsSystem::Raycast(*se->GetScene(), glm::vec3(ox, oy, oz), glm::vec3(dx, dy, dz), maxDist, 0xFFFFFFFFu, ignoreId);
+
+        lua_pushboolean(L, hit.hit ? 1 : 0);
+        lua_pushinteger(L, hit.entityId);
+        lua_pushnumber(L, hit.distance);
+        lua_pushnumber(L, hit.point.x);
+        lua_pushnumber(L, hit.point.y);
+        lua_pushnumber(L, hit.point.z);
+        return 6;
+    }
+
+    static int Lua_IsOnFloor(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        EntityID id = static_cast<EntityID>(luaL_checkinteger(L, 1));
+        bool onFloor = false;
+        if (se && se->GetScene())
+        {
+            if (const Entity* e = se->GetScene()->GetEntity(id))
+                onFloor = e->rigidBody.isOnFloor;
+        }
+        lua_pushboolean(L, onFloor ? 1 : 0);
+        return 1;
+    }
+
+    static int Lua_CreateTimer(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        const char* name = luaL_checkstring(L, 1);
+        float secs = static_cast<float>(luaL_checknumber(L, 2));
+        if (se && name)
+            se->CreateTimer(name, secs);
+        return 0;
+    }
+
+    static int Lua_IsTimerReady(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        const char* name = luaL_checkstring(L, 1);
+        bool ready = (se && name) ? se->IsTimerReady(name) : true;
+        lua_pushboolean(L, ready ? 1 : 0);
+        return 1;
+    }
+
+    static int Lua_GetTimerLeft(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        const char* name = luaL_checkstring(L, 1);
+        float left = (se && name) ? se->GetTimerLeft(name) : 0.0f;
+        lua_pushnumber(L, left);
+        return 1;
+    }
+
+    static int Lua_PlaySound3D(lua_State* L)
+    {
+        auto* se = GetScriptEngine(L);
+        const char* name = luaL_checkstring(L, 1);
+        float x = static_cast<float>(luaL_checknumber(L, 2));
+        float y = static_cast<float>(luaL_checknumber(L, 3));
+        float z = static_cast<float>(luaL_checknumber(L, 4));
+        float vol = static_cast<float>(luaL_optnumber(L, 5, 0.85));
+        float pitch = static_cast<float>(luaL_optnumber(L, 6, 1.0));
+        int atten = static_cast<int>(luaL_optinteger(L, 7, 0));
+        float unitSize = static_cast<float>(luaL_optnumber(L, 8, 10.0));
+        float maxDist = static_cast<float>(luaL_optnumber(L, 9, 65.0));
+        float pitchRand = static_cast<float>(luaL_optnumber(L, 10, 0.04));
+        if (se && se->GetAudio() && name)
+            se->GetAudio()->PlaySound3D(name, glm::vec3(x, y, z), vol, pitch, atten, unitSize, maxDist, pitchRand);
+        return 0;
+    }
+
     ScriptEngine::~ScriptEngine()
     {
         Shutdown();
@@ -494,6 +580,7 @@ namespace Hargon
         bind("get_gameplay_stats",  Lua_GetGameplayStats);
         bind("fire_projectile",     Lua_FireProjectile);
         bind("play_sound",          Lua_PlaySound);
+        bind("play_sound_3d",       Lua_PlaySound3D);
         bind("spawn_particles",     Lua_SpawnParticles);
         bind("add_score",           Lua_AddScore);
         bind("destroy_entity",      Lua_DestroyEntity);
@@ -502,6 +589,11 @@ namespace Hargon
         bind("emit_signal",         Lua_EmitSignal);
         bind("is_action_pressed",   Lua_IsActionPressed);
         bind("get_group_count",     Lua_GetGroupCount);
+        bind("raycast",             Lua_Raycast);
+        bind("is_on_floor",         Lua_IsOnFloor);
+        bind("create_timer",        Lua_CreateTimer);
+        bind("is_timer_ready",      Lua_IsTimerReady);
+        bind("get_timer_left",      Lua_GetTimerLeft);
 
         lua_setglobal(m_L, "Engine");
     }
@@ -614,14 +706,37 @@ namespace Hargon
         return true;
     }
 
+    void ScriptEngine::CreateTimer(const std::string& name, float seconds)
+    {
+        m_Timers[name] = std::max(0.0f, seconds);
+    }
+
+    bool ScriptEngine::IsTimerReady(const std::string& name) const
+    {
+        auto it = m_Timers.find(name);
+        return it == m_Timers.end() || it->second <= 0.0f;
+    }
+
+    float ScriptEngine::GetTimerLeft(const std::string& name) const
+    {
+        auto it = m_Timers.find(name);
+        return (it != m_Timers.end()) ? std::max(0.0f, it->second) : 0.0f;
+    }
+
     void ScriptEngine::UpdateScripts(Scene& scene, float dt)
     {
         m_Scene = &scene;
+        for (auto& [k, rem] : m_Timers)
+        {
+            if (rem > 0.0f)
+                rem = std::max(0.0f, rem - dt);
+        }
+
         size_t count = scene.GetEntities().size();
         for (size_t i = 0; i < count; ++i)
         {
             Entity& e = scene.GetEntities()[i];
-            if (!e.alive || !e.luaScript.enabled || e.luaScript.scriptPath.empty())
+            if (!scene.ShouldProcessEntity(e, false) || !e.luaScript.enabled || e.luaScript.scriptPath.empty())
                 continue;
 
             LoadAndCallEntityFunction(e, "on_update", dt, true, kInvalidEntity);

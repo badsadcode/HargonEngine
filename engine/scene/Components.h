@@ -63,6 +63,7 @@ namespace Hargon
         float adjustmentSaturation = 1.08f;
 
         bool frustumCullingEnabled = true;
+        bool shadowsEnabled = true;
     };
 
     struct TagComponent
@@ -149,9 +150,11 @@ namespace Hargon
     {
         bool enabled = false;
         bool isDirectional = false;
+        bool castShadows = true;
         glm::vec3 color{ 1.0f, 0.95f, 0.85f };
         float intensity = 2.5f;
         float range = 18.0f;
+        float shadowBias = 0.0025f;
     };
 
     // Inspired by Godot's Camera3D & SpringArm3D (scene/3d/camera_3d.h, spring_arm_3d.h)
@@ -178,11 +181,13 @@ namespace Hargon
         bool isKinematic = false;
         bool useGravity = false;
         bool freezeY = true;
+        bool isOnFloor = false;
         float mass = 1.0f;
         float drag = 4.0f;
         float bounciness = 0.2f;
         glm::vec3 velocity{ 0.0f };
         glm::vec3 angularVelocity{ 0.0f };
+        glm::vec3 floorNormal{ 0.0f, 1.0f, 0.0f };
     };
 
     struct ColliderComponent
@@ -190,6 +195,8 @@ namespace Hargon
         bool enabled = false;
         bool isSphere = true;
         bool isTrigger = false;
+        uint32_t collisionLayer = 1u;
+        uint32_t collisionMask = 0xFFFFFFFFu;
         glm::vec3 boxHalfExtents{ 0.6f, 0.6f, 0.6f };
         float sphereRadius = 0.75f;
     };
@@ -208,6 +215,7 @@ namespace Hargon
         bool loop = false;
         bool spatial = true;
         bool playOnAwake = false;
+        bool awakePlayed = false;
     };
 
     struct LuaScriptComponent

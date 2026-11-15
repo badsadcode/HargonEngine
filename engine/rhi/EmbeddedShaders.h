@@ -4,6 +4,7 @@
 
 #include "../../assets/shaders/PBRLit_vs_spv.h"
 #include "../../assets/shaders/PBRLit_ps_spv.h"
+#include "../../assets/shaders/ShadowDepth_vs_spv.h"
 #include "../../assets/shaders/Skybox_vs_spv.h"
 #include "../../assets/shaders/Skybox_ps_spv.h"
 #include "../../assets/shaders/LineGizmo_vs_spv.h"

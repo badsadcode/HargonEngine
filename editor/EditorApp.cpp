@@ -887,6 +887,7 @@ namespace Hargon
                 ImGui::SliderFloat("Exposure", &m_Scene.worldEnv.tonemapExposure, 0.4f, 2.2f);
                 ImGui::SliderFloat("Glow/Bloom", &m_Scene.worldEnv.glowIntensity, 0.0f, 1.5f);
                 ImGui::Checkbox("Frustum Cull", &m_Scene.worldEnv.frustumCullingEnabled);
+                ImGui::Checkbox("Directional Shadows (PCF)", &m_Scene.worldEnv.shadowsEnabled);
             }
         }
         ImGui::End();
@@ -1100,6 +1101,57 @@ namespace Hargon
                     const char* attenModes[] = { "Inverse Distance", "Inverse Square", "Logarithmic", "Disabled" };
                     ImGui::Combo("Attenuation", &e->audioSource.attenuationModel, attenModes, 4);
                     ImGui::SliderFloat("Max Distance", &e->audioSource.maxDistance, 5.0f, 150.0f);
+                    ImGui::Checkbox("Play On Awake", &e->audioSource.playOnAwake);
+                }
+
+                // 8. RigidBody3D Physics Component
+                if (ImGui::CollapsingHeader("RigidBody3D Physics"))
+                {
+                    ImGui::Checkbox("RigidBody Enabled", &e->rigidBody.enabled);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Kinematic", &e->rigidBody.isKinematic);
+                    ImGui::Checkbox("Use Gravity", &e->rigidBody.useGravity);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Freeze Y", &e->rigidBody.freezeY);
+                    ImGui::SliderFloat("Mass", &e->rigidBody.mass, 0.1f, 50.0f);
+                    ImGui::SliderFloat("Drag", &e->rigidBody.drag, 0.0f, 20.0f);
+                    ImGui::SliderFloat("Bounciness", &e->rigidBody.bounciness, 0.0f, 1.0f);
+                    ImGui::Text("Is On Floor: %s | Vel: (%.1f, %.1f, %.1f)",
+                        e->rigidBody.isOnFloor ? "YES" : "NO",
+                        e->rigidBody.velocity.x, e->rigidBody.velocity.y, e->rigidBody.velocity.z);
+                }
+
+                // 9. CollisionShape3D & Layer/Mask Filter
+                if (ImGui::CollapsingHeader("Collider3D & Layer Mask"))
+                {
+                    ImGui::Checkbox("Collider Enabled", &e->collider.enabled);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Is Sphere", &e->collider.isSphere);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Is Trigger", &e->collider.isTrigger);
+                    if (e->collider.isSphere)
+                        ImGui::SliderFloat("Sphere Radius", &e->collider.sphereRadius, 0.1f, 15.0f);
+                    else
+                        ImGui::DragFloat3("Box Half Extents", &e->collider.boxHalfExtents.x, 0.1f, 0.05f, 100.0f);
+                    int layer = static_cast<int>(e->collider.collisionLayer);
+                    if (ImGui::InputInt("Collision Layer", &layer))
+                        e->collider.collisionLayer = static_cast<uint32_t>(std::max(0, layer));
+                    int mask = static_cast<int>(e->collider.collisionMask & 0x7FFFFFFFu);
+                    if (ImGui::InputInt("Collision Mask", &mask))
+                        e->collider.collisionMask = static_cast<uint32_t>(mask);
+                }
+
+                // 10. Light3D Component
+                if (ImGui::CollapsingHeader("Light3D (Directional / Point)"))
+                {
+                    ImGui::Checkbox("Light Enabled", &e->light.enabled);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Directional", &e->light.isDirectional);
+                    ImGui::Checkbox("Cast Shadows", &e->light.castShadows);
+                    ImGui::ColorEdit3("Light Color", &e->light.color.x);
+                    ImGui::SliderFloat("Intensity", &e->light.intensity, 0.0f, 12.0f);
+                    ImGui::SliderFloat("Range", &e->light.range, 1.0f, 100.0f);
+                    ImGui::SliderFloat("Shadow Bias", &e->light.shadowBias, 0.0002f, 0.02f, "%.4f");
                 }
             }
         }
