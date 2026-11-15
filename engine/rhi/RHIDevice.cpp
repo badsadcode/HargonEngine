@@ -555,6 +555,7 @@ namespace Hargon
         depthDesc.height = m_Height;
         depthDesc.format = m_DepthFormat;
         depthDesc.isRenderTarget = true;
+        depthDesc.isShaderResource = false;
         depthDesc.debugName = "MainDepthBuffer";
         depthDesc.initialState = nvrhi::ResourceStates::DepthWrite;
         depthDesc.keepInitialState = true;
@@ -787,6 +788,7 @@ namespace Hargon
         depthDesc.format = m_DepthFormat;
         depthDesc.debugName = "OffscreenViewportDepth";
         depthDesc.isRenderTarget = true;
+        depthDesc.isShaderResource = false;
         depthDesc.initialState = nvrhi::ResourceStates::DepthWrite;
         depthDesc.keepInitialState = true;
         depthDesc.useClearValue = true;

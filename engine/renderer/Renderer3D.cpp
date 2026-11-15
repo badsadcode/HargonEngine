@@ -252,6 +252,7 @@ namespace Hargon
         shadowDesc.format = nvrhi::Format::D32;
         shadowDesc.isRenderTarget = true;
         shadowDesc.isShaderResource = true;
+        shadowDesc.isTypeless = true;
         shadowDesc.debugName = "DirectionalShadowMap";
         shadowDesc.initialState = nvrhi::ResourceStates::ShaderResource;
         shadowDesc.keepInitialState = true;
